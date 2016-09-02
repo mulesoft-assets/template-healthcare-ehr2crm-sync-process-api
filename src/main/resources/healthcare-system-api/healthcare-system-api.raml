@@ -1,0 +1,515 @@
+#%RAML 1.0
+title: Healthcare FHIR System API
+version: v1
+baseUri: http://localhost:8081/api/
+mediaType: [application/xml+fhir, application/json+fhir]
+
+types:
+
+  #Primitives
+  id:                           !include dataTypes/primitives/id.raml
+  base64Binary:                 string
+  code:                         !include dataTypes/primitives/code.raml
+  date:                         !include dataTypes/primitives/date.raml
+  dateTime:                     !include dataTypes/primitives/dateTime.raml
+  decimal:                      !include dataTypes/primitives/decimal.raml
+  gender:                       !include dataTypes/primitives/gender.raml
+  instant:                      !include dataTypes/primitives/instant.raml
+  markdown:                     !include dataTypes/primitives/markdown.raml
+  ObservationRelationshipType:  !include dataTypes/primitives/ObservationRelationshipType.raml
+  EncounterState:               !include dataTypes/primitives/EncounterState.raml
+  ObservationCode:              !include dataTypes/primitives/ObservationCode.raml
+  ObservationStatus:            !include dataTypes/primitives/ObservationStatus.raml
+  positiveInt:                  !include dataTypes/primitives/positiveInt.raml
+  time:                         !include dataTypes/primitives/time.raml
+  UnitOfTime:                   !include dataTypes/primitives/UnitOfTime.raml
+  unsignedInt:                  !include dataTypes/primitives/unsignedInt.raml
+  uri:                          !include dataTypes/primitives/uri.raml
+  xhtml:                        !include dataTypes/primitives/markdown.raml
+
+  #Elements  
+  Address:                      !include dataTypes/elements/Address.raml
+  Age:                          Quantity
+  Annotation:                   !include dataTypes/elements/Annotation.raml
+  Attachment:                   !include dataTypes/elements/Attachment.raml
+  BackboneElement:              !include dataTypes/elements/BackboneElement.raml
+  Coding:                       !include dataTypes/elements/Coding.raml
+  CodeableConcept:              !include dataTypes/elements/CodeableConcept.raml
+  Conformance:                  !include dataTypes/resources/Conformance.raml
+  ContactPoint:                 !include dataTypes/elements/ContactPoint.raml
+  Duration:                     !include dataTypes/elements/Duration.raml
+  Element:                      !include dataTypes/elements/Element.raml
+  Extension:                    !include dataTypes/elements/Extension.raml
+  HumanName:                    !include dataTypes/elements/HumanName.raml
+  Identifier:                   !include dataTypes/elements/Identifier.raml
+  Meta:                         !include dataTypes/elements/Meta.raml
+  Narrative:                    !include dataTypes/elements/Narrative.raml
+  Period:                       !include dataTypes/elements/Reference.raml
+  Ratio:                        !include dataTypes/elements/Ratio.raml
+  Range:                        !include dataTypes/elements/Range.raml
+  Reference:                    !include dataTypes/elements/Reference.raml
+  SampledData:                  !include dataTypes/elements/SampledData.raml
+  Signature:                    !include dataTypes/elements/Signature.raml
+  SimpleQuantity:               Quantity
+  Timing:                       !include dataTypes/elements/Timing.raml
+  Quantity:                     !include dataTypes/elements/Quantity.raml
+ 
+  #Resources
+  AllergyIntolerance:           !include dataTypes/resources/AllergyIntolerance.raml
+  Appointment:                  !include dataTypes/resources/Appointment.raml
+  Condition:                    !include dataTypes/resources/Condition.raml
+  Device:                       !include dataTypes/resources/Device.raml
+  DomainResource:               !include dataTypes/resources/DomainResource.raml
+  Encounter:                    !include dataTypes/resources/Encounter.raml
+  Slot:                         !include dataTypes/resources/Slot.raml
+  Medication:                   !include dataTypes/resources/Medication.raml
+  MedicationOrder:              !include dataTypes/resources/MedicationOrder.raml
+  Observation:                  !include dataTypes/resources/Observation.raml
+  Patient:                      !include dataTypes/resources/Patient.raml
+  Practitioner:                 !include dataTypes/resources/Practitioner.raml
+  Resource:                     !include dataTypes/resources/Resource.raml
+  Schedule:                     !include dataTypes/resources/Schedule.raml
+  Bundle:                       !include dataTypes/resources/Bundle.raml 
+      
+
+resourceTypes:
+  fhirResourceType:             !include resourceTypes/fhirResourceType.raml
+  fhirResource:                 !include resourceTypes/fhirResource.raml
+  fhirCompartment:              !include resourceTypes/fhirCompartment.raml
+  fhirSearch:                   !include resourceTypes/fhirSearch.raml
+  fhirVersionedResource:        !include resourceTypes/fhirVersionedResource.raml
+  fhirHistory:                  !include resourceTypes/fhirHistory.raml
+
+
+traits:
+  vread:                        !include traits/vread.raml
+  read:                         !include traits/read.raml
+  update:                       !include traits/update.raml
+  delete:                       !include traits/delete.raml
+  create:                       !include traits/create.raml
+  search:                       !include traits/search.raml
+  conformance:                  !include traits/conformance.raml
+  history:                      !include traits/history.raml
+  conditionalOperation:         !include traits/conditionalOperation.raml
+  
+  # resource specific
+  allergyIntoleranceSearch:
+    queryParameters: !include queryParams/resources/allergyIntoleranceParams.yaml
+  appointmentSearch:
+    queryParameters: !include queryParams/resources/appointmentParams.yaml
+  conditionSearch:
+    queryParameters: !include queryParams/resources/conditionParams.yaml
+  deviceSearch:
+    queryParameters: !include queryParams/resources/deviceParams.yaml
+  encounterSearch:
+    queryParameters: !include queryParams/resources/encounterParams.yaml
+  medicationSearch:
+    queryParameters: !include queryParams/resources/medicationParams.yaml
+  medicationOrderSearch:
+    queryParameters: !include queryParams/resources/medicationOrderParams.yaml
+  observationSearch:
+    queryParameters: !include queryParams/resources/observationParams.yaml
+  patientSearch:
+    queryParameters: !include queryParams/resources/patientParams.yaml
+  practitionerSearch:
+    queryParameters: !include queryParams/resources/practitionerParams.yaml
+  scheduleSearch:
+    queryParameters: !include queryParams/resources/scheduleParams.yaml
+  slotSearch:
+    queryParameters: !include queryParams/resources/slotParams.yaml
+
+  #POST search - resource specific
+  allergyIntolerancePOSTSearch:
+    body:
+      application/x-www-form-urlencoded:
+        properties: !include queryParams/resources/allergyIntoleranceParams.yaml 
+  appointmentPOSTSearch:
+    body:
+      application/x-www-form-urlencoded:
+        properties: !include queryParams/resources/appointmentParams.yaml 
+  conditionPOSTSearch:
+    body:
+      application/x-www-form-urlencoded:
+        properties: !include queryParams/resources/conditionParams.yaml 
+  devicePOSTSearch:
+    body:
+      application/x-www-form-urlencoded:
+        properties: !include queryParams/resources/deviceParams.yaml 
+  encounterPOSTSearch:
+    body:
+      application/x-www-form-urlencoded:
+        properties: !include queryParams/resources/encounterParams.yaml 
+  medicationPOSTSearch:
+    body:
+      application/x-www-form-urlencoded:
+        properties: !include queryParams/resources/medicationParams.yaml
+  medicationOrderPOSTSearch:
+    body:
+      application/x-www-form-urlencoded:
+        properties: !include queryParams/resources/medicationOrderParams.yaml  
+  patientPOSTSearch:
+    body:
+      application/x-www-form-urlencoded:
+        properties: !include queryParams/resources/patientParams.yaml 
+  observationPOSTSearch:
+    body:
+      application/x-www-form-urlencoded:
+        properties: !include queryParams/resources/observationParams.yaml 
+  practitionerPOSTSearch:
+    body:
+      application/x-www-form-urlencoded:
+        properties: !include queryParams/resources/practitionerParams.yaml 
+  schedulePOSTSearch:
+    body:
+      application/x-www-form-urlencoded:
+        properties: !include queryParams/resources/scheduleParams.yaml 
+  slotPOSTSearch:
+    body:
+      application/x-www-form-urlencoded:
+        properties: !include queryParams/resources/slotParams.yaml 
+  
+
+### API definition ###
+
+#/:
+#  get:
+#    is: [{search: { bundleName: GeneralBundle}}]
+#    queryParameters:
+#      _format:
+#        required: false
+#        enum: [application/json, application/xml]
+#      
+#  options:
+#    is: [conformance]
+#    queryParameters:
+#      _format:
+#        required: false
+#        enum: [application/json, application/xml]
+#
+#  /_history:
+#    type: { fhirHistory : { bundleName: GeneralBundle } }
+#
+#/metadata:
+#  get:
+#    is: [conformance]
+#    queryParameters:
+#    responses:
+#      200:
+#        headers:
+#          ETag:
+#            example: condition
+#        body:
+#          application/json:
+#            type: Conformance
+#
+/AllergyIntolerance:
+  type: fhirResourceType
+  get:
+    is: [ allergyIntoleranceSearch ]
+  put:
+    is: [ allergyIntoleranceSearch, conditionalOperation ]
+  delete:
+    is: [ allergyIntoleranceSearch, conditionalOperation ]
+  /_history:
+    type: fhirHistory
+    is: [ allergyIntoleranceSearch ]
+  /{id}:
+    type: fhirResource
+    /_history:
+      type: fhirHistory
+      /{vid}:
+        type: { fhirVersionedResource: { resourceName: AllergyIntolerance } }
+  /_search:
+    type: fhirSearch
+    get:
+      is: [ allergyIntoleranceSearch ]
+    post:
+      is: [ allergyIntolerancePOSTSearch ]
+
+/Appointment:
+  type: fhirResourceType
+  get:
+    is: [ appointmentSearch ]
+  put:
+    is: [ appointmentSearch, conditionalOperation ]
+  delete:
+    is: [ appointmentSearch, conditionalOperation ]
+  /_history:
+    type: fhirHistory
+    is: [ appointmentSearch ]
+  /{id}:
+    type: fhirResource
+    /_history:
+      type: fhirHistory
+      /{vid}:
+        type: { fhirVersionedResource: { resourceName: Appointment } }
+  /_search:
+    type: fhirSearch
+    get:
+      is: [ appointmentSearch ]
+    post:
+      is: [ appointmentPOSTSearch ]
+
+/Condition:
+  type: fhirResourceType
+  get:
+    is: [ conditionSearch ]
+  put:
+    is: [ conditionSearch, conditionalOperation ]
+  delete:
+    is: [ conditionSearch, conditionalOperation ]
+  /_history:
+    type: fhirHistory
+    is: [ conditionSearch ]
+  /{id}:
+    type: fhirResource
+
+    /_history:
+      type: fhirHistory
+      /{vid}:
+        type: { fhirVersionedResource: { resourceName: Condition } }
+  /_search:
+    type: fhirSearch
+    get:
+      is: [ conditionSearch ]
+    post:
+      is: [ conditionPOSTSearch ]
+
+/Device:
+  type: fhirResourceType
+  get:
+    is: [ deviceSearch ]
+  put:
+    is: [ deviceSearch, conditionalOperation ]
+  delete:
+    is: [ deviceSearch, conditionalOperation ]
+  /_history:
+    type: fhirHistory
+    is: [ deviceSearch ]
+  /{id}:
+    type: fhirResource
+    /_history:
+      type: fhirHistory
+      /{vid}:
+        type: { fhirVersionedResource: { resourceName: Device } }
+  /_search:
+    type: fhirSearch
+    get:
+      is: [ deviceSearch ]
+    post:
+      is: [ devicePOSTSearch ]
+
+/Encounter:
+  type: fhirResourceType
+  get:
+    is: [ encounterSearch ]
+  put:
+    is: [ encounterSearch, conditionalOperation ]
+  delete:
+    is: [ encounterSearch, conditionalOperation ]
+  /_history:
+    type: fhirHistory
+    is: [ encounterSearch ]
+  /{id}:
+    type: fhirResource
+    /_history:
+      type: fhirHistory
+      /{vid}:
+        type: { fhirVersionedResource: { resourceName: Encounter } }
+  /_search:
+    type: fhirSearch
+    get:
+      is: [ encounterSearch ]
+    post:
+      is: [ encounterPOSTSearch ]
+
+/Medication:
+  type: fhirResourceType
+  get:
+    is: [ medicationSearch ]
+  put:
+    is: [ medicationSearch, conditionalOperation ]
+  delete:
+    is: [ medicationSearch, conditionalOperation ]
+  /_history:
+    type: fhirHistory
+    is: [ medicationSearch ]
+  /{id}:
+    type: fhirResource
+    /_history:
+      type: fhirHistory
+      /{vid}:
+        type: { fhirVersionedResource: { resourceName: Medication } }
+  /_search:
+    type: fhirSearch
+    get:
+      is: [ medicationSearch ]
+    post:
+      is: [ medicationPOSTSearch ]
+
+/MedicationOrder:
+  type: fhirResourceType
+  get:
+    is: [ medicationOrderSearch ]
+  put:
+    is: [ medicationOrderSearch, conditionalOperation ]
+  delete:
+    is: [ medicationOrderSearch, conditionalOperation ]
+  /_history:
+    type: fhirHistory
+    is: [ medicationOrderSearch ]
+  /{id}:
+    type: fhirResource
+    /_history:
+      type: fhirHistory
+      /{vid}:
+        type: { fhirVersionedResource: { resourceName: MedicationOrder } }
+  /_search:
+    type: fhirSearch
+    get:
+      is: [ medicationOrderSearch ]
+    post:
+      is: [ medicationOrderPOSTSearch ]
+
+/Observation:
+  type: fhirResourceType
+  get:
+    is: [ observationSearch ]
+  put:
+    is: [ observationSearch, conditionalOperation ]
+  delete:
+    is: [ observationSearch, conditionalOperation ]
+  /_history:
+    type: fhirHistory
+    is: [ observationSearch ]
+  /{id}:
+    type: fhirResource
+    /_history:
+      type: fhirHistory
+      /{vid}:
+        type: { fhirVersionedResource: { resourceName: Observation } }
+  /_search:
+    type: fhirSearch
+    get:
+      is: [ observationSearch ]
+    post:
+      is: [ observationPOSTSearch ]
+
+/Patient:
+  type: fhirResourceType
+  get:
+    is: [ patientSearch ]
+  put:
+    is: [ patientSearch, conditionalOperation ]
+  delete:
+    is: [ patientSearch, conditionalOperation ]
+  /_history:
+    type: fhirHistory
+    is: [patientSearch]
+  /{id}:
+    type: fhirResource
+    /_history:
+      type: fhirHistory
+      /{vid}:
+        type: { fhirVersionedResource: { resourceName: Patient } }
+    /Condition:
+      type:  fhirCompartment
+      is: [ conditionSearch ]
+    /Observation:
+      type: fhirCompartment
+      is: [ observationSearch ]
+    /MedicationOrder:
+      type: fhirCompartment
+      is: [ medicationOrderSearch ]
+    /Appointment:
+      type: fhirCompartment
+      is: [ appointmentSearch ]
+    /AllergyIntolerance:
+      type: fhirCompartment
+      is: [ allergyIntoleranceSearch ]
+  /_search:
+    type: { fhirSearch }
+    get:
+      is: [ patientSearch ]
+    post:
+      is: [ patientPOSTSearch ]
+ 
+
+/Practitioner:
+  type: fhirResourceType
+  get:
+    is: [ practitionerSearch ]
+  put:
+    is: [ practitionerSearch, conditionalOperation ]
+  delete:
+    is: [ practitionerSearch, conditionalOperation ]
+  /_history:
+    type: fhirHistory
+    is: [ practitionerSearch ]
+  /{id}:
+    type: fhirResource
+    /_history:
+      type: fhirHistory
+      /{vid}:
+        type: { fhirVersionedResource: { resourceName: Practitioner } }
+    /Schedule:
+      type: fhirCompartment
+      is: [ scheduleSearch ]
+    /Appointment:
+      type: fhirCompartment
+      is: [ appointmentSearch ]
+  /_search:
+    type: fhirSearch
+    get:
+      is: [ practitionerSearch ]
+    post:
+      is: [ practitionerPOSTSearch ]
+
+/Schedule:
+  type: fhirResourceType
+  get:
+    is: [ scheduleSearch ]
+  put:
+    is: [ scheduleSearch, conditionalOperation ]
+  delete:
+    is: [ scheduleSearch, conditionalOperation ]
+  /_history:
+    type: fhirHistory
+    is: [ scheduleSearch ]
+  /{id}:
+    type: fhirResource
+    /_history:
+      type: fhirHistory
+      /{vid}:
+        type: { fhirVersionedResource: { resourceName: Schedule } }
+  /_search:
+    type: fhirSearch
+    get:
+      is: [ scheduleSearch ]
+    post:
+      is: [ schedulePOSTSearch ]
+
+/Slot:
+  type: fhirResourceType
+  get:
+    is: [ slotSearch ]
+  put:
+    is: [ slotSearch, conditionalOperation ]
+  delete:
+    is: [ slotSearch, conditionalOperation ]
+  /_history:
+    type: fhirHistory
+    is: [ slotSearch ]
+  /{id}:
+    type: fhirResource
+    /_history:
+      type: fhirHistory
+      /{vid}:
+        type: { fhirVersionedResource: { resourceName: Slot } }
+  /_search:
+    type: fhirSearch
+    get:
+      is: [ slotSearch ]
+    post:
+      is: [ slotPOSTSearch ]
+

@@ -1,0 +1,14 @@
+#%RAML 1.0
+title: healthcare-sfdchealth2fhir-ehr-experience-api
+baseUri: http://healthcare-sfdchealth2fhir-ehr-experience-api.cloudhub.io/api
+version: v1
+/patients/{patientId}/migrateClinicalData:
+  displayName: migrateClinicalData
+  post:
+    description: Migrate clinical data from EHR to CRM
+    responses:
+      201:
+        body:
+          application/json:
+            example: !include experience-api-response.json
+               
