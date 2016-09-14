@@ -8,6 +8,7 @@
         required: false
         description: When recorded
       identifier:
+        type: string|integer
         required: false
         description: External ids for this item
       last-date:

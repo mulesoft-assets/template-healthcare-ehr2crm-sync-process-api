@@ -11,6 +11,7 @@
         required: false
         description: The clinical status of the condition
       code:
+        type: integer
         required: false
         description: Code for the condition
       date-recorded:
@@ -23,6 +24,7 @@
         required: false
         description: Manifestation/symptom
       identifier:
+        type: string|integer
         required: false
         description: A unique identifier of the condition record
       onset:

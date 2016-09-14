@@ -51,6 +51,7 @@
         required: false
         description: A portion of the given name of the patient
       identifier:
+        type: string|integer
         required: false
         description: A patient identifier
       language:

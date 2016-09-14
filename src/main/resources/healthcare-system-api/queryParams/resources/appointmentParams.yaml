@@ -5,6 +5,7 @@
         required: false
         description: Appointment date/time
       identifier:
+        type: string|integer
         required: false
         description: An Identifier of the Appointment
       location:

@@ -11,6 +11,7 @@
         required: false
         description: Episode(s) of care that this encounter should be recorded against
       identifier:
+        type: string|integer
         required: false
         description: Identifier(s) by which this encounter is known
       incomingreferral:

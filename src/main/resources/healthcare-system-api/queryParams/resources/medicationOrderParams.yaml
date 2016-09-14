@@ -8,6 +8,7 @@
         required: false
         description: Return prescriptions with this encounter identifier
       identifier:
+        type: string|integer
         required: false
         description: Return prescriptions with this external identifier
       medication:

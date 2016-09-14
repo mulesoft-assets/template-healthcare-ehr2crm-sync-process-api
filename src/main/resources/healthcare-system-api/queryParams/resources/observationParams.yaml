@@ -34,6 +34,7 @@
         required: false
         description: Healthcare event related to the observation
       identifier:
+        type: string|integer
         required: false
         description: The unique id for a particular observation
       patient:

@@ -5,6 +5,7 @@
         required: false
         description: The Schedule Resource that we are seeking a slot within
       identifier:
+        type: string|integer
         required: false
         description: A Slot Identifier
       slot-type:

@@ -1,4 +1,5 @@
       identifier:
+        type: string|integer
         required: false
         description: Instance id from manufacturer, owner, and others
       location:

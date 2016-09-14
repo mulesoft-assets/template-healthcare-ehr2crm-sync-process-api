@@ -12,7 +12,7 @@ post:
     200:
       body:
         application/json:
-          type: Bundle
+          type: <<bundleName>>
 get:
   description: This interaction searches a set of resources based on some filter criteria.
-  is: [search]
+  is: [{search: { bundleName: <<bundleName>>}}]

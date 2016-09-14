@@ -1,6 +1,6 @@
 #%RAML 1.0 ResourceType
 
-#This file is located at resourceTypes/fhirResourceType.raml
+#This file is located at resourceTypes/fhirResource.raml
 
 post:
   description: |
@@ -21,7 +21,7 @@ post:
       description: Precondition Failed error indicating the client's criteria were not selective enough.
 get:
   description: This interaction searches a set of resources based on some filter criteria.
-  is: [search]
+  is: [{search: { bundleName: <<resourcePathName>>Bundle}}]
 put:
   description: The conditional update interaction allows a client to update an existing resource based on some identification criteria, rather than by logical id.
   is: [update]

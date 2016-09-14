@@ -9,24 +9,29 @@ properties:
   patient: Reference
   encounter?: Reference
   asserter?: Reference
-  dateRecorded?: date-only
+  dateRecorded?: date
   code: CodeableConcept
   category?: CodeableConcept
-  clinicalStatus?: code
-  verificationStatus: code
+  clinicalStatus?: 
+    type: code
+    enum: [active, relapse, remission, resolved]
+  verificationStatus: 
+    type: code
+    enum: [provisional, differential, confirmed, refuted, entered-in-error, unknown]
   severity?: CodeableConcept
-  /^onset(DateTime|Period|Range|String)$/?: datetime | Age | Period | Range | string
-  /^abatement(DateTime|Quantity|Boolean|Range|String)$/?: datetime | Age | boolean | Range | string
+  /^onset(DateTime|Period|Range|String)$/?: dateTime | Age | Period | Range | string
+  /^abatement(DateTime|Quantity|Boolean|Range|String)$/?: dateTime | Age | boolean | Range | string
   stage?:
     type: BackboneElement
     properties:
       summary?: CodeableConcept
-      asessment?: Reference
+      asessment?: Reference[]
   evidence?:
-    type: BackboneElement
-    properties:
-      code?: CodeableConcept
-      detail?: any
-  bodySite?: CodeableConcept
+    type: array
+    items: 
+      type: BackboneElement
+      properties:
+        code?: CodeableConcept
+        detail?: Reference[]
+  bodySite?: CodeableConcept[]  
   notes?:
-additionalProperties: false
