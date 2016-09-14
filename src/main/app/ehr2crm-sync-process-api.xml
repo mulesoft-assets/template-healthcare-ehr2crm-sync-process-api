@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mule xmlns:context="http://www.springframework.org/schema/context"
+<mule xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" 
+	xmlns:context="http://www.springframework.org/schema/context"
 	xmlns:tls="http://www.mulesoft.org/schema/mule/tls" 
 	xmlns:api-platform-gw="http://www.mulesoft.org/schema/mule/api-platform-gw" 
 	xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" 
-	xmlns:sfdc="http://www.mulesoft.org/schema/mule/sfdc" 
 	xmlns:json="http://www.mulesoft.org/schema/mule/json" 
 	xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" 
 	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" 
@@ -19,32 +19,25 @@ http://www.mulesoft.org/schema/mule/apikit http://www.mulesoft.org/schema/mule/a
 http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
 http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
 http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
-http://www.mulesoft.org/schema/mule/sfdc http://www.mulesoft.org/schema/mule/sfdc/current/mule-sfdc.xsd
 http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
 http://www.mulesoft.org/schema/mule/api-platform-gw http://www.mulesoft.org/schema/mule/api-platform-gw/current/mule-api-platform-gw.xsd
 http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd" >
 
 	<context:property-placeholder location="common.properties, mule.${mule.env}.properties"/>
     
-    <http:listener-config name="api-httpListenerConfig" host="0.0.0.0" port="${https.port}" doc:name="HTTP Listener Configuration" protocol="HTTPS">
-        <tls:context>
-            <tls:key-store type="jks" path="${keystore.location}" alias="${key.alias}" keyPassword="${keystore.password}" password="${key.password}"/>
-        </tls:context>
-
+    <http:listener-config name="api-httpListenerConfig" host="0.0.0.0" port="${http.port}" doc:name="HTTP Listener Configuration" >
     </http:listener-config>
     
 <!--     <api-platform-gw:api id="${api.id}" apiName="${api.name}" version="${api.version}" flowRef="api-main" doc:name="API Autodiscovery"></api-platform-gw:api> -->
-        
     <apikit:config name="api-config" raml="healthcare-ehr2crm-sync-process-api.raml" consoleEnabled="true" consolePath="console" doc:name="Router">
         <apikit:flow-mapping resource="/patients/{patientId}/migrateClinicalData" action="post" flow-ref="post:/patients/{patientId}/migrateClinicalData:api-config"/>
 
-
-
     </apikit:config>
-    <http:request-config name="Healthcare_EHR_System_API_Configuration" host="${ehr.system.api.host}" port="${ehr.system.api.port}" basePath="${ehr.system.api.basePath}" doc:name="HTTP Request Configuration">
+    <http:request-config name="ehr-system-api" host="${ehr.system.api.host}" port="${ehr.system.api.port}" basePath="${ehr.system.api.basePath}" doc:name="HTTP Request Configuration">
         <http:raml-api-configuration location="healthcare-system-api/healthcare-system-api.raml"/>
+
     </http:request-config>
-    <http:request-config name="Healthcare_SFDC_System_API_Configuration" host="${sfdc.system.api.host}" port="${sfdc.system.api.port}" basePath="${sfdc.system.api.basePath}" doc:name="HTTP Request Configuration">
+    <http:request-config name="sfhc-system-api" host="${sfdc.system.api.host}" port="${sfdc.system.api.port}" basePath="${sfdc.system.api.basePath}" doc:name="HTTP Request Configuration">
         <http:raml-api-configuration location="healthcare-system-api/healthcare-system-api.raml"/>
     </http:request-config>
 
@@ -55,15 +48,14 @@ http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/
     </flow>
 
      <flow name="post:/patients/{patientId}/migrateClinicalData:api-config"  >
+        <flow-ref name="migratePatient" doc:name="migratePatient"/>
+        <set-payload value="#[NullPayload.getInstance()]" doc:name="NullPayload"/>
 
         <async doc:name="Async">
             <scatter-gather doc:name="Scatter-Gather">
-                <flow-ref name="migratePatients" doc:name="migratePatients"/>
-                <flow-ref name="migrateConditions" doc:name="migrateConditions"/>
-                <flow-ref name="migrateObservations" doc:name="migrateObservations"/>
-                <flow-ref name="migrateMedicationOrders" doc:name="migrateMedicationOrders"/>
-                <flow-ref name="migrateAllergyIntolerances" doc:name="migrateAllergyIntolerances"/>
-                <flow-ref name="migratePractitioners" doc:name="migratePractitioners"/>
+		        <flow-ref name="migrateConditions" doc:name="migrateConditions"/>
+		        <flow-ref name="migrateAllergyIntolerances" doc:name="migrateAllergyIntolerances"/>
+                <flow-ref name="migrateAppointments" doc:name="migrateAppointments"/>
             </scatter-gather>
         </async>
         <logger message="The Async POST process has started." level="INFO" doc:name="Log success"/>
@@ -71,83 +63,121 @@ http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/
             <dw:set-payload><![CDATA[%dw 1.0
 %output application/json
 ---
-{"message": "The migration process has started and will be completed asynchronously."}]]></dw:set-payload>
+{
+	"message": "The migration process has started and will be completed asynchronously."
+}]]></dw:set-payload>
         </dw:transform-message>
 
     </flow>
-    <sub-flow name="migratePatients">
+    <sub-flow name="migratePatient">
 
 
-        <http:request config-ref="Healthcare_EHR_System_API_Configuration" path="/Patient" method="GET" doc:name="GET Patients from EHR">
+        <http:request config-ref="ehr-system-api" path="/Patient/{id}" method="GET" doc:name="GET Patient from EHR">
+            <http:request-builder>
+                <http:uri-param paramName="id" value="#[flowVars.patientId]"/>
+            </http:request-builder>
 
         </http:request>
-        <dw:transform-message doc:name="Transform JSON response to List">
+        <dw:transform-message doc:name="Add identifier">
             <dw:set-payload><![CDATA[%dw 1.0
 %output application/java
 ---
-payload]]></dw:set-payload>
+payload ++ 
+{ 
+	identifier : [{
+		value: payload.id
+	}]
+}
+]]></dw:set-payload>
         </dw:transform-message>
-        <foreach collection="payload" doc:name="For Each Patient">
-            <set-variable variableName="patient" value="#[payload]" doc:name="Set patient variable"/>
-            <http:request config-ref="Healthcare_SFDC_System_API_Configuration" path="/Patient" method="GET" doc:name="GET Patient from SFDC">
-                <http:request-builder>
-                    <http:query-param paramName="identifier" value="#[flowVars.patient.id]"/>
-                </http:request-builder>
-            </http:request>
-            <dw:transform-message doc:name="Get existing Patient Id from JSON response">
-                <dw:set-variable variableName="existingPatientId"><![CDATA[%dw 1.0
+
+        <enricher source="#[payload]" target="#[flowVars.sfhcPatientId]" doc:name="Message Enricher">
+            <processor-chain doc:name="Processor Chain">
+                <http:request config-ref="sfhc-system-api" path="/Patient" method="GET" doc:name="GET Patient from SFHC">
+                    <http:request-builder>
+                        <http:query-param paramName="identifier" value="#[payload.identifier[0].value]"/>
+                    </http:request-builder>
+                </http:request>
+
+                <dw:transform-message doc:name="Get existing Patient Id from JSON response">
+                    <dw:set-payload><![CDATA[%dw 1.0
 %output application/java
 ---
-payload.entry.id[0] when (payload.total > 0) otherwise null]]></dw:set-variable>
-            </dw:transform-message>
-            <choice doc:name="Does Patient already exist?">
-                <when expression="#[flowVars.existingPatientId == null]">
-                    <set-payload value="#[flowVars.patient]" doc:name="Set Payload"/>
-                    <http:request config-ref="Healthcare_SFDC_System_API_Configuration" path="/Patient" method="POST" doc:name="POST Patient into SFDC"/>
-                </when>
-                <otherwise>
-                    <set-payload value="#[flowVars.patient]" doc:name="Set Payload"/>
-                    <http:request config-ref="Healthcare_SFDC_System_API_Configuration" path="/Patient/{id}" method="PUT" doc:name="PUT Patient into SFDC">
-                        <http:request-builder>
-                            <http:uri-param paramName="id" value="#[flowVars.existingPatientId]"/>
-                        </http:request-builder>
-                    </http:request>
-                </otherwise>
-            </choice>
-        </foreach>
+payload.entry[0].resource.id when (payload.total > 0) otherwise null]]></dw:set-payload>
+                </dw:transform-message>
+            </processor-chain>
+        </enricher>
+
+        <choice doc:name="Is patient missing in SFHC?">
+            <when expression="#[flowVars.sfhcPatientId == null]">
+                <logger message="Creating: #[payload]" level="INFO" doc:name="Create branch"/>
+
+                <json:object-to-json-transformer doc:name="Object to JSON"/>
+                <http:request config-ref="sfhc-system-api" path="/Patient" method="POST" doc:name="POST Patient into SFDC"/>
+            </when>
+            <otherwise>
+                <logger message="Updating: #[payload]" level="INFO" doc:name="Update branch"/>
+
+                <json:object-to-json-transformer doc:name="Object to JSON"/>
+                <http:request config-ref="sfhc-system-api" path="/Patient/{id}" method="PUT" doc:name="PUT Patient into SFDC">
+                    <http:request-builder>
+                        <http:uri-param paramName="id" value="#[flowVars.sfhcPatientId]"/>
+                    </http:request-builder>
+                </http:request>
+            </otherwise>
+        </choice>
+
 
     </sub-flow>
     <sub-flow name="migratePractitioners">
-        <http:request config-ref="Healthcare_EHR_System_API_Configuration" path="/Practitioner" method="GET" doc:name="GET Practitioners from EHR"/>
-        <dw:transform-message doc:name="Transform JSON response to List">
+        <http:request config-ref="ehr-system-api" path="/Practitioner" method="GET" doc:name="GET Practitioners from EHR"/>
+        <dw:transform-message doc:name="Extract practitioners and add identifier">
+            <dw:input-payload doc:sample="sample_data\json.json"/>
             <dw:set-payload><![CDATA[%dw 1.0
 %output application/java
 ---
-payload]]></dw:set-payload>
+payload.entry map (
+	$.resource ++ 
+	{ 
+		identifier : [{
+			value: $.resource.id
+		}]
+	}
+)]]></dw:set-payload>
         </dw:transform-message>
         <foreach collection="payload" doc:name="For Each Practitioner">
-            <set-variable variableName="practitioner" value="#[payload]" doc:name="Set practitioner variable"/>
-            <http:request config-ref="Healthcare_SFDC_System_API_Configuration" path="/Practitioner" method="GET" doc:name="GET Practitioner from SFDC">
-                <http:request-builder>
-                    <http:query-param paramName="identifier" value="#[flowVars.practitioner.id]"/>
-                </http:request-builder>
-            </http:request>
-            <dw:transform-message doc:name="Get existing Practitioner Id from JSON response">
-                <dw:set-variable variableName="existingPractitionerId"><![CDATA[%dw 1.0
+
+            <enricher source="#[payload]" target="#[flowVars.sfhcPractitionerId]" doc:name="save to var sfhcPractitionerId">
+                <processor-chain doc:name="Processor Chain">
+                    <http:request config-ref="sfhc-system-api" path="/Practitioner" method="GET" doc:name="GET Practitioner from SFHC">
+                        <http:request-builder>
+                            <http:query-param paramName="identifier" value="#[payload.identifier[0].value]"/>
+
+                        </http:request-builder>
+                    </http:request>
+                    <dw:transform-message doc:name="extract ID">
+                        <dw:set-payload><![CDATA[%dw 1.0
 %output application/java
 ---
-payload.entry.id[0] when ((sizeOf payload.entry) > 0) otherwise null]]></dw:set-variable>
-            </dw:transform-message>
-            <choice doc:name="Does Practitioner already exist?">
-                <when expression="#[flowVars.existingPractitionerId == null]">
-                    <set-payload value="#[flowVars.practitioner]" doc:name="Set Payload"/>
-                    <http:request config-ref="Healthcare_SFDC_System_API_Configuration" path="/Practitioner" method="POST" doc:name="POST Practitioner into SFDC"/>
+payload.entry[0].resource.id when payload.total > 0 otherwise null]]></dw:set-payload>
+                    </dw:transform-message>
+                </processor-chain>
+
+            </enricher>
+
+
+            <choice doc:name="Is the Practitioner missing in SFHC?">
+                <when expression="#[flowVars.sfhcPractitionerId == null]">
+                    <logger message="Creating: #[payload]" level="INFO" doc:name="Create branch"/>
+                    <json:object-to-json-transformer doc:name="Object to JSON"/>
+                    <http:request config-ref="sfhc-system-api" path="/Practitioner" method="POST" doc:name="POST Practitioner into SFHC"/>
                 </when>
                 <otherwise>
-                    <set-payload value="#[flowVars.practitioner]" doc:name="Set Payload"/>
-                    <http:request config-ref="Healthcare_SFDC_System_API_Configuration" path="/Practitioner/{id}" method="PUT" doc:name="PUT Practitioner into SFDC">
+	                <logger message="Updating: #[payload]" level="INFO" doc:name="Update branch"/>
+                    <json:object-to-json-transformer doc:name="Object to JSON"/>
+                    <http:request config-ref="sfhc-system-api" path="/Practitioner/{id}" method="PUT" doc:name="PUT Practitioner into SFHC">
                         <http:request-builder>
-                            <http:uri-param paramName="id" value="#[flowVars.existingPractitionerId]"/>
+                            <http:uri-param paramName="id" value="#[flowVars.sfhcPractitionerId]"/>
                         </http:request-builder>
                     </http:request>
                 </otherwise>
@@ -156,173 +186,186 @@ payload.entry.id[0] when ((sizeOf payload.entry) > 0) otherwise null]]></dw:set-
 
     </sub-flow>
     <sub-flow name="migrateConditions">
-        <http:request config-ref="Healthcare_EHR_System_API_Configuration" path="/Patient/{id}/Condition" method="GET" doc:name="GET Conditions from EHR">
+        <http:request config-ref="ehr-system-api" path="/Patient/{id}/Condition" method="GET" doc:name="GET Conditions from EHR">
             <http:request-builder>
                 <http:uri-param paramName="id" value="#[flowVars.patientId]"/>
             </http:request-builder>
         </http:request>
-        <dw:transform-message doc:name="Transform JSON response to List">
+        <dw:transform-message doc:name="Extract Conditions and add identifier">
             <dw:set-payload><![CDATA[%dw 1.0
 %output application/java
 ---
-payload]]></dw:set-payload>
+payload.entry filter $.resource.verificationStatus == "confirmed" map 
+(
+	$.resource ++ 
+	{ 
+		identifier : [{
+			value: $.resource.id
+		}]
+	}
+)]]></dw:set-payload>
         </dw:transform-message>
         <foreach collection="payload" doc:name="For Each Condition">
-            <set-variable variableName="condition" value="#[payload]" doc:name="Set condition variable"/>
-            <http:request config-ref="Healthcare_SFDC_System_API_Configuration" path="/Condition" method="GET" doc:name="GET Condition from SFDC">
-                <http:request-builder>
-                    <http:query-param paramName="identifier" value="#[flowVars.condition.id]"/>
-                </http:request-builder>
-            </http:request>
-            <dw:transform-message doc:name="Get existing Condition Id from JSON response">
-                <dw:set-variable variableName="existingConditionId"><![CDATA[%dw 1.0
+
+            <enricher source="#[payload]" target="#[flowVars.sfhcConditionId]" doc:name="save to var sfhcConditionId">
+                <processor-chain doc:name="Processor Chain">
+                    <http:request config-ref="sfhc-system-api" path="/Condition" method="GET" doc:name="GET Condition from SFHC">
+                        <http:request-builder>
+                            <http:query-param paramName="identifier" value="#[payload.identifier[0].value]"/>
+
+                        </http:request-builder>
+                    </http:request>
+                    <dw:transform-message doc:name="extract ID">
+                        <dw:set-payload><![CDATA[%dw 1.0
 %output application/java
 ---
-payload.entry.id[0] when ((sizeOf payload.entry) > 0) otherwise null]]></dw:set-variable>
-            </dw:transform-message>
-            <choice doc:name="Does Condition already exist?">
-                <when expression="#[flowVars.existingConditionId == null]">
-                    <set-payload value="#[flowVars.condition]" doc:name="Set Payload"/>
-                    <http:request config-ref="Healthcare_SFDC_System_API_Configuration" path="/Condition" method="POST" doc:name="POST Condition into SFDC"/>
+payload.entry[0].resource.id when payload.total > 0 otherwise null]]></dw:set-payload>
+                    </dw:transform-message>
+                </processor-chain>
+            </enricher>
+
+            <choice doc:name="Is the Condition missing in SFHC?">
+                <when expression="#[flowVars.sfhcConditionId == null]">
+					<logger message="Creating: #[payload]" level="INFO" doc:name="Create branch"/>
+                    <json:object-to-json-transformer doc:name="Object to JSON"/>
+                    <http:request config-ref="sfhc-system-api" path="/Condition" method="POST" doc:name="POST Condition into SFDC"/>
                 </when>
                 <otherwise>
-                    <set-payload value="#[flowVars.condition]" doc:name="Set Payload"/>
-                    <http:request config-ref="Healthcare_SFDC_System_API_Configuration" path="/Condition/{id}" method="PUT" doc:name="PUT Condition into SFDC">
+                	<logger message="Updating #[payload]" level="INFO" doc:name="Update branch"/>
+                    <json:object-to-json-transformer doc:name="Object to JSON"/>
+                    <http:request config-ref="sfhc-system-api" path="/Condition/{id}" method="PUT" doc:name="PUT Condition into SFDC">
                         <http:request-builder>
-                            <http:uri-param paramName="id" value="#[flowVars.existingConditionId]"/>
+                            <http:uri-param paramName="id" value="#[flowVars.sfhcConditionId]"/>
                         </http:request-builder>
                     </http:request>
                 </otherwise>
             </choice>
         </foreach>
-
-    </sub-flow>
-    <sub-flow name="migrateObservations">
-        <http:request config-ref="Healthcare_EHR_System_API_Configuration" path="/Patient/{id}/Observation" method="GET" doc:name="GET Observations from EHR">
-            <http:request-builder>
-                <http:uri-param paramName="id" value="#[flowVars.patientId]"/>
-            </http:request-builder>
-        </http:request>
-        <dw:transform-message doc:name="Transform JSON response to List">
-            <dw:set-payload><![CDATA[%dw 1.0
-%output application/java
----
-payload]]></dw:set-payload>
-        </dw:transform-message>
-        <foreach collection="payload" doc:name="For Each Observation">
-            <set-variable variableName="observation" value="#[payload]" doc:name="Set observation variable"/>
-            <http:request config-ref="Healthcare_SFDC_System_API_Configuration" path="/Observation" method="GET" doc:name="GET Observation from SFDC">
-                <http:request-builder>
-                    <http:query-param paramName="identifier" value="#[flowVars.observation.id]"/>
-                </http:request-builder>
-            </http:request>
-            <dw:transform-message doc:name="Get existing Observation Id from JSON response">
-                <dw:set-variable variableName="existingObservationId"><![CDATA[%dw 1.0
-%output application/java
----
-payload.entry.id[0] when ((sizeOf payload.entry) > 0) otherwise null]]></dw:set-variable>
-            </dw:transform-message>
-            <choice doc:name="Does Observation already exist?">
-                <when expression="#[flowVars.existingObservationId == null]">
-                    <set-payload value="#[flowVars.observation]" doc:name="Set Payload"/>
-                    <http:request config-ref="Healthcare_SFDC_System_API_Configuration" path="/Observation" method="POST" doc:name="POST Observation into SFDC"/>
-                </when>
-                <otherwise>
-                    <set-payload value="#[flowVars.observation]" doc:name="Set Payload"/>
-                    <http:request config-ref="Healthcare_SFDC_System_API_Configuration" path="/Observation/{id}" method="PUT" doc:name="PUT Observation into SFDC">
-                        <http:request-builder>
-                            <http:uri-param paramName="id" value="#[flowVars.existingObservationId]"/>
-                        </http:request-builder>
-                    </http:request>
-                </otherwise>
-            </choice>
-        </foreach>
-
-    </sub-flow>
-    <sub-flow name="migrateMedicationOrders">
-        <http:request config-ref="Healthcare_EHR_System_API_Configuration" path="/Patient/{id}/MedicationOrder" method="GET" doc:name="GET MedicationOrder from EHR">
-            <http:request-builder>
-                <http:uri-param paramName="id" value="#[flowVars.patientId]"/>
-            </http:request-builder>
-        </http:request>
-        <dw:transform-message doc:name="Transform JSON response to List">
-            <dw:set-payload><![CDATA[%dw 1.0
-%output application/java
----
-payload]]></dw:set-payload>
-        </dw:transform-message>
-        <foreach collection="payload" doc:name="For Each MedicationOrder">
-            <set-variable variableName="medicationOrder" value="#[payload]" doc:name="Set medicationOrder variable"/>
-            <http:request config-ref="Healthcare_SFDC_System_API_Configuration" path="/MedicationOrder" method="GET" doc:name="GET MedicationOrder from SFDC">
-                <http:request-builder>
-                    <http:query-param paramName="identifier" value="#[flowVars.medicationOrder.id]"/>
-                </http:request-builder>
-            </http:request>
-            <dw:transform-message doc:name="Get existing MedicationOrder Id from JSON response">
-                <dw:set-variable variableName="existingMedicationOrderId"><![CDATA[%dw 1.0
-%output application/java
----
-payload.entry.id[0] when ((sizeOf payload.entry) > 0) otherwise null]]></dw:set-variable>
-            </dw:transform-message>
-            <choice doc:name="Does MedicationOrder already exist?">
-                <when expression="#[flowVars.existingMedicationOrderId == null]">
-                    <set-payload value="#[flowVars.medicationOrder]" doc:name="Set Payload"/>
-                    <http:request config-ref="Healthcare_SFDC_System_API_Configuration" path="/MedicationOrder" method="POST" doc:name="POST MedicationOrder into SFDC"/>
-                </when>
-                <otherwise>
-                    <set-payload value="#[flowVars.medicationOrder]" doc:name="Set Payload"/>
-                    <http:request config-ref="Healthcare_SFDC_System_API_Configuration" path="/MedicationOrder/{id}" method="PUT" doc:name="PUT MedicationOrder into SFDC">
-                        <http:request-builder>
-                            <http:uri-param paramName="id" value="#[flowVars.existingMedicationOrderId]"/>
-                        </http:request-builder>
-                    </http:request>
-                </otherwise>
-            </choice>
-        </foreach>
-
-    </sub-flow>
+    </sub-flow> 
+    
+    
     <sub-flow name="migrateAllergyIntolerances">
-        <http:request config-ref="Healthcare_EHR_System_API_Configuration" path="/Patient/{id}/AllergyIntolerance" method="GET" doc:name="GET AllergyIntolerance from EHR">
+        <http:request config-ref="ehr-system-api" path="/Patient/{id}/AllergyIntolerance" method="GET" doc:name="GET AllergyIntolerances from EHR">
             <http:request-builder>
                 <http:uri-param paramName="id" value="#[flowVars.patientId]"/>
             </http:request-builder>
         </http:request>
-        <dw:transform-message doc:name="Transform JSON response to List">
+        <dw:transform-message doc:name="Extract Allergies and add identifier">
+            <dw:input-payload doc:sample="sample_data\json_1.json"/>
             <dw:set-payload><![CDATA[%dw 1.0
 %output application/java
 ---
-payload]]></dw:set-payload>
+payload.entry filter $.resource.status == "confirmed" map (
+
+	$.resource ++ 
+	{ 
+		identifier : [{
+			value: $.resource.id
+		}]
+	}
+)]]></dw:set-payload>
         </dw:transform-message>
         <foreach collection="payload" doc:name="For Each AllergyIntolerance">
-            <set-variable variableName="allergyIntolerance " value="#[payload]" doc:name="Set allergyIntolerance variable"/>
-            <http:request config-ref="Healthcare_SFDC_System_API_Configuration" path="/AllergyIntolerance" method="GET" doc:name="GET AllergyIntolerance from SFDC">
-                <http:request-builder>
-                    <http:query-param paramName="identifier" value="#[flowVars.'allergyIntolerance '.id]"/>
-                </http:request-builder>
-            </http:request>
-            <dw:transform-message doc:name="Get existing AllergyIntolerance Id from JSON response">
-                <dw:set-variable variableName="existingAllergyIntoleranceId"><![CDATA[%dw 1.0
+
+            <enricher source="#[payload]" target="#[flowVars.sfdcAllergyId]" doc:name="save to var sfhcAllergyId">
+                <processor-chain doc:name="Processor Chain">
+                    <http:request config-ref="sfhc-system-api" path="/AllergyIntolerance" method="GET" doc:name="GET AllergyIntolerance from SFHC">
+                        <http:request-builder>
+                            <http:query-param paramName="identifier" value="#[payload.identifier[0].value]"/>
+                        </http:request-builder>
+                    </http:request>
+                    <dw:transform-message doc:name="extract ID">
+                        <dw:set-payload><![CDATA[%dw 1.0
 %output application/java
 ---
-payload.entry.id[0] when ((sizeOf payload.entry) > 0) otherwise null]]></dw:set-variable>
-            </dw:transform-message>
-            <choice doc:name="Does AllergyIntolerance already exist?">
-                <when expression="#[flowVars.existingAllergyIntoleranceId == null]">
-                    <set-payload value="#[flowVars.'allergyIntolerance ']" doc:name="Set Payload"/>
-                    <http:request config-ref="Healthcare_SFDC_System_API_Configuration" path="/AllergyIntolerance" method="POST" doc:name="POST AllergyIntolerance into SFDC"/>
+payload.entry[0].resource.id when payload.total > 0 otherwise null]]></dw:set-payload>
+                    </dw:transform-message>
+                </processor-chain>
+            </enricher>
+            <choice doc:name="Is the AllergyIntolerance missing in SFHC?">
+                <when expression="#[flowVars.sfdcAllergyId == null]">
+                    <logger message="Creating: #[payload]" level="INFO" doc:name="Create branch"/>
+                    <json:object-to-json-transformer doc:name="Object to JSON"/>
+                    <http:request config-ref="sfhc-system-api" path="/AllergyIntolerance" method="POST" doc:name="POST AllergyIntolerance into SFDC"/>
                 </when>
                 <otherwise>
-                    <set-payload value="#[flowVars.'allergyIntolerance ']" doc:name="Set Payload"/>
-                    <http:request config-ref="Healthcare_SFDC_System_API_Configuration" path="/AllergyIntolerance/{id}" method="PUT" doc:name="PUT AllergyIntolerance into SFDC">
+                	<logger message="Updating #[payload]" level="INFO" doc:name="Update branch"/>
+                    <json:object-to-json-transformer doc:name="Object to JSON"/>
+                    <http:request config-ref="sfhc-system-api" path="/AllergyIntolerance/{id}" method="PUT" doc:name="PUT AllergyIntolerance into SFDC">
                         <http:request-builder>
-                            <http:uri-param paramName="id" value="#[flowVars.existingAllergyIntoleranceId]"/>
+                            <http:uri-param paramName="id" value="#[flowVars.sfdcAllergyId]"/>
+
+
                         </http:request-builder>
                     </http:request>
                 </otherwise>
             </choice>
         </foreach>
-
     </sub-flow>
+    
+    <sub-flow name="migrateAppointments">
+        <http:request config-ref="ehr-system-api" path="/Patient/{id}/Appointment" method="GET" doc:name="GET Appointments from EHR">
+            <http:request-builder>
+                <http:uri-param paramName="id" value="#[flowVars.patientId]"/>
+            </http:request-builder>
+        </http:request>
+
+        <dw:transform-message doc:name="Extract Appointments and add identifier">
+            <dw:input-payload doc:sample="sample_data\json.json"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+payload.entry map (
+	$.resource ++ 
+	{ 
+		identifier : [{
+			value: $.resource.id
+		}]
+	}
+)]]></dw:set-payload>
+        </dw:transform-message>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+payload map (($ - "minutesDuration") when  ($.minutesDuration == "") otherwise $)]]></dw:set-payload>
+        </dw:transform-message>
+        <foreach collection="payload" doc:name="For Each Appointment">
+
+            <enricher source="#[payload]" target="#[flowVars.sfhcAppointmentId]" doc:name="save to var sfhcAppointmentId">
+                <processor-chain doc:name="Processor Chain">
+                    <http:request config-ref="sfhc-system-api" path="/Appointment" method="GET" doc:name="GET Appointment from SFHC">
+                        <http:request-builder>
+                            <http:query-param paramName="identifier" value="#[payload.identifier[0].value]"/>
+                        </http:request-builder>
+                    </http:request>
+                    <dw:transform-message doc:name="extract ID">
+                        <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+payload.entry[0].resource.id when payload.total > 0 otherwise null]]></dw:set-payload>
+                    </dw:transform-message>
+                </processor-chain>
+            </enricher>
+            <choice doc:name="Is the Appointment missing in SFHC?">
+                <when expression="#[flowVars.sfhcAppointmentId == null]">
+                	<logger message="Creating: #[payload]" level="INFO" doc:name="Create branch"/>
+                    <json:object-to-json-transformer doc:name="Object to JSON"/>
+                    <http:request config-ref="sfhc-system-api" path="/Appointment" method="POST" doc:name="POST Appointment into SFHC"/>
+                </when>
+                <otherwise>
+                	<logger message="Updating #[payload]" level="INFO" doc:name="Update branch"/>
+                    <json:object-to-json-transformer doc:name="Object to JSON"/>
+                    <http:request config-ref="sfhc-system-api" path="/Appointment/{id}" method="PUT" doc:name="PUT Appointment into SFHC">
+                        <http:request-builder>
+                            <http:uri-param paramName="id" value="#[flowVars.sfhcAppointmentId]"/>
+                        </http:request-builder>
+                    </http:request>
+                </otherwise>
+            </choice>
+        </foreach>
+    </sub-flow>
+    
 
     <apikit:mapping-exception-strategy name="api-apiKitGlobalExceptionMapping">
     
@@ -362,4 +405,5 @@ payload.entry.id[0] when ((sizeOf payload.entry) > 0) otherwise null]]></dw:set-
             <set-payload value="{&quot;message&quot; : &quot;Internal Server Error&quot;,&quot;service&quot; : &quot;clinicalData&quot;, &quot;reason&quot; : &quot;#[exception.getSummaryMessage()]&quot;}" doc:name="Set Payload"/>
         </apikit:mapping>
     </apikit:mapping-exception-strategy>
+    
 </mule>
