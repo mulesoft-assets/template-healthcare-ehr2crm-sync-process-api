@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.mule.templates</groupId>
 		<artifactId>templates-tooling-healthcare-parent-pom</artifactId>
-		<version>1.3.1</version>
+		<version>1.3.2</version>
 	</parent>
 
 	<modelVersion>4.0.0</modelVersion>
@@ -13,13 +13,6 @@
 	<version>1.3.0-SNAPSHOT</version>
 	<packaging>mule</packaging>
 	<name>template-healthcare-ehr2crm-sync-process-api</name>
-
-	<properties>
-		<mule.version>3.8.1</mule.version>
-		<mule.tools.version>1.2.0</mule.tools.version>
-		<munit.version>1.2.0</munit.version>
-		<mule.munit.support.version>3.8.1</mule.munit.support.version>
-	</properties>
 
 	<scm>
 		<connection>scm:git:https://github.com/mulesoft/template-healthcare-ehr2crm-sync-process-api.git</connection>
@@ -31,10 +24,12 @@
 	<build>
 		<plugins>
 			<plugin>
-				<groupId>org.mule.tools</groupId>
-				<artifactId>maven-mule-plugin</artifactId>
+				<groupId>org.mule.tools.maven</groupId>
+				<artifactId>mule-app-maven-plugin</artifactId>
+				<version>${mule.tools.version}</version>
+				<extensions>true</extensions>
 				<configuration>
-					<copyToAppsDirectory>true</copyToAppsDirectory>
+                    <copyToAppsDirectory>true</copyToAppsDirectory>
 					<inclusions>
 						<inclusion>
 							<groupId>org.mule.modules</groupId>
@@ -50,7 +45,7 @@
 						</inclusion>
 					</inclusions>
 				</configuration>
-			</plugin>
+			</plugin>		
 		</plugins>
 		<resources>
 			<resource>
