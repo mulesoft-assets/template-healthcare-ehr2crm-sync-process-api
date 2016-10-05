@@ -78,12 +78,13 @@ http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/
             </http:request-builder>
 
         </http:request>
-        <dw:transform-message doc:name="Add identifier">
+        <dw:transform-message doc:name="Add identifier and active field">
             <dw:set-payload><![CDATA[%dw 1.0
 %output application/java
 ---
 payload ++ 
 { 
+	active: true,
 	identifier : [{
 		value: payload.id
 	}]
