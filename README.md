@@ -45,14 +45,14 @@ This template uses SOAP services defined by WSDL files located at src/main/wsdl 
 
 
 # Run it! <a name="runit"/>
-Simple steps to get Healthcare EHR System API running.
+Simple steps to get Healthcare EHR to CRM Sync Process API running.
 See below.
 
 ## Running on premise <a name="runonopremise"/>
 In this section we detail the way you should run your Anypoint Template on your computer.
 
 
-### Where to Download Mule Studio and Mule ESB
+### Where to Download Anypoint Studio and Mule ESB
 First thing to know if you are a newcomer to Mule is where to get the tools.
 
 + You can download Anypoint Studio from this [Location](http://www.mulesoft.com/platform/studio)
@@ -88,7 +88,7 @@ Follow other steps defined [here](#runonpremise) and once your app is all set an
 Anypoint Studio provides you with really easy way to deploy your Template directly to CloudHub, for the specific steps to do so please check this [link](https://docs.mulesoft.com/mule-fundamentals/v/3.8/deploying-mule-applications#deploy-to-the-anypoint-platform)
 
 ## Properties to be configured (With examples) <a name="propertiestobeconfigured"/>
-In order to use this Mule Anypoint Template you need to configure properties (APIs, Credentials, API Autodiscovery, etc.) either in properties file or in CloudHub as Environment Variables. The Fitbit System API is using secured connection. Detail list with examples:
+In order to use this Mule Anypoint Template you need to configure properties (APIs, Credentials, API Autodiscovery, etc.) either in properties file or in CloudHub as Environment Variables. Detail list with examples:
 ### Application properties
 + http.port `8081`
 
