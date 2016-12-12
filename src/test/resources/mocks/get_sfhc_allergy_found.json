@@ -1,0 +1,23 @@
+{
+  "resourceType": "Bundle",
+  "type": "searchset",
+  "link": [
+    {
+      "relation": "self",
+      "url": "http://dev-sfhc2fhir-system-api.cloudhub.io/api/AllergyIntolerance?identifier=7"
+    }
+  ],
+  "meta": {
+    "lastUpdated": "2016-12-12T06:27:44.232Z"
+  },
+  "total": 1,
+  "entry": [
+    {
+      "fullUrl": "http://dev-sfhc2fhir-system-api.cloudhub.io/api/Patient/a0V5000000BNjSYEA1",
+      "resource": {
+        "resourceType": "AllergyIntolerance",
+        "id": "a0V5000000BNjSYEA1"
+      }
+    }
+  ]
+}

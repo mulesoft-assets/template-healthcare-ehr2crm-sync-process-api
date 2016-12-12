@@ -1,0 +1,1 @@
+{"resourceType":"AllergyIntolerance","id":"7","patient":{"reference":"Patient/13248402"},"reporter":{"reference":"Patient/13248402"},"substance":{"coding":[{"display":"Penicillin"}]},"recordedDate":"2016-11-03","status":"confirmed","identifier":[{"value":"7"}]}

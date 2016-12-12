@@ -1,0 +1,49 @@
+{
+  "resourceType": "Bundle",
+  "type": "searchset",
+  "link": [
+    {
+      "relation": "self",
+      "url": "http://dev-ehr2fhir-system-api.cloudhub.io/api/Patient/12345/Appointment"
+    }
+  ],
+  "meta": {
+    "lastUpdated": "2016-12-12T10:04:36.05Z"
+  },
+  "total": 1,
+  "entry": [
+    {
+      "fullUrl": "http://dev-ehr2fhir-system-api.cloudhub.io/api/Appointment/4",
+      "resource": {
+        "resourceType": "Appointment",
+        "id": "4",
+        "description": "",
+        "start": "2016-11-09T20:00:00+00:00",
+        "end": "2016-11-09T20:30:00+00:00",
+        "minutesDuration": "",
+        "participant": [
+          {
+            "status": "accepted",
+            "actor": {
+              "reference": "Patient/12345",
+              "display": "John Doe"
+            }
+          },
+          {
+            "status": "accepted",
+            "actor": {
+              "reference": "Practitioner/1",
+              "display": "Jamie Fletcher, MD"
+            }
+          }
+        ],
+        "status": "booked",
+        "slot": [
+          {
+            "reference": "Slot/142"
+          }
+        ]
+      }
+    }
+  ]
+}

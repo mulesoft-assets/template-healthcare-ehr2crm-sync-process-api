@@ -1,0 +1,41 @@
+{
+  "resourceType": "Bundle",
+  "type": "searchset",
+  "link": [
+    {
+      "relation": "self",
+      "url": "http://dev-ehr2fhir-system-api.cloudhub.io/api/Patient/12345/Condition"
+    }
+  ],
+  "meta": {
+    "lastUpdated": "2016-12-12T09:16:24.848Z"
+  },
+  "total": 1,
+  "entry": [
+    {
+      "fullUrl": "http://dev-ehr2fhir-system-api.cloudhub.io/api/Condition/8",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "8",
+        "patient": {
+          "reference": "Patient/12345"
+        },
+        "asserter": {
+          "reference": "Patient/12345",
+          "display": ""
+        },
+        "code": {
+          "coding": [
+            {
+              "code": "73211009",
+              "display": "Diabetes mellitus",
+              "system": "http://snomed.info/sct"
+            }
+          ]
+        },
+        "verificationStatus": "confirmed",
+        "onsetDateTime": "2016-11-02"
+      }
+    }
+  ]
+}

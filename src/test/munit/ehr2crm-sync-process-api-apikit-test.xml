@@ -1,0 +1,349 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:context="http://www.springframework.org/schema/context"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:mock="http://www.mulesoft.org/schema/mule/mock" xmlns:munit="http://www.mulesoft.org/schema/mule/munit" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd
+http://www.mulesoft.org/schema/mule/mock http://www.mulesoft.org/schema/mule/mock/current/mule-mock.xsd">
+    <spring:beans>
+        <spring:import resource="classpath:ehr2crm-sync-process-api.xml" />
+    </spring:beans>
+    <context:property-placeholder location="mule.test.properties" />
+    <munit:config mock-connectors="false" mock-inbounds="false" doc:name="MUnit configuration"/>
+    <http:request-config name="HTTP_Request_Configuration" protocol="HTTP" host="localhost" port="${http.port}" basePath="/api" doc:name="HTTP Request Configuration" />
+    
+    <munit:test name="post:/patients/patientId/migrateClinicalData:notFoundInEHR" description="Verifying functionality of [post:/patients/patientId/migrateClinicalData:healthcare-ehr2crm-sync-process-api-config-202-application/json]">
+        <mock:when messageProcessor=".*:.*" doc:name="Mock GET EHR Patient">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['GET Patient from EHR']"/>
+            </mock:with-attributes>
+            <mock:then-return payload="{&quot;message&quot;: &quot;Resource not found&quot;}">
+                <mock:inbound-properties>
+                    <mock:inbound-property key="http.status" value="404"/>
+                </mock:inbound-properties>
+            </mock:then-return>
+        </mock:when>
+        <set-variable variableName="patientId" value="12345" doc:name="patientId"/>
+        <http:request config-ref="HTTP_Request_Configuration" path="/patients/{patientId}/migrateClinicalData" method="POST" doc:name="HTTP">
+            <http:request-builder>
+                <http:uri-param paramName="patientId" value="#[flowVars.patientId]"/>
+                <http:header headerName="Accept" value="application/json"/>
+
+            </http:request-builder>
+            <http:success-status-code-validator values="404"/>
+        </http:request>
+        <munit:assert-true message="The HTTP Status code is not correct!" condition="#[messageInboundProperty('http.status').is(eq(404))]" doc:name="assert that - http.status eq 404"/>
+    </munit:test>
+    
+    <munit:test name="post:/patients/patientId/migrateClinicalData:foundInEHR:notFoundInSFHC" description="Verifying functionality of [post:/patients/patientId/migrateClinicalData:healthcare-ehr2crm-sync-process-api-config-202-application/json]">
+        <mock:when messageProcessor=".*:.*" doc:name="Mock GET EHR Patient">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['GET Patient from EHR']"/>
+            </mock:with-attributes>
+            <mock:then-return payload="#[getResource('mocks/get_ehr_patient_found.json').asString()]" mimeType="application/json">
+                <mock:inbound-properties>
+                    <mock:inbound-property key="http.status" value="200"/>
+                </mock:inbound-properties>
+            </mock:then-return>
+        </mock:when>
+        <mock:spy messageProcessor=".*:.*" doc:name="Spy GET SFHC Patient">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['GET Patient from SFHC']"/>
+            </mock:with-attributes>
+            <mock:assertions-before-call>
+                <munit:assert-on-equals message="Identifier must be set" expectedValue="12345" actualValue="#[payload.identifier[0].value]" doc:name="Identifier present"/>
+                <munit:assert-on-equals message="Active field must be set to true" expectedValue="#[true]" actualValue="#[payload.active]" doc:name="active = true"/>
+            </mock:assertions-before-call>
+        </mock:spy>
+        <mock:when messageProcessor=".*:.*" doc:name="Mock GET SFHC Patient">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['GET Patient from SFHC']"/>
+            </mock:with-attributes>
+            <mock:then-return payload="#[getResource('mocks/get_sfhc_patient_found.json').asString()]" mimeType="application/json"/>
+        </mock:when>
+        <mock:spy messageProcessor=".*:.*" doc:name="Spy POST SFHC Patient">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['POST Patient into SFDC']"/>
+            </mock:with-attributes>
+            <mock:assertions-before-call>
+                <munit:assert-on-equals expectedValue="#[getResource('mocks/post_sfhc_patient.json').asString()]" actualValue="#[message.payloadAs(java.lang.String)]" doc:name="POST payload as expected"/>
+            </mock:assertions-before-call>
+        </mock:spy>
+        <mock:when messageProcessor=".*:.*" doc:name="Mock POST SFHC Patient">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['POST Patient into SFDC']"/>
+            </mock:with-attributes>
+            <mock:then-return payload="#[NullPayload.getInstance()]"/>
+        </mock:when>
+        <mock:when messageProcessor=".*:.*" doc:name="Skip additional migrations">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['Async']"/>
+            </mock:with-attributes>
+            <mock:then-return payload="#[NullPayload.getInstance()]"/>
+        </mock:when>
+        <set-variable variableName="id" value="12345" doc:name="patient ID"/>
+        <http:request config-ref="HTTP_Request_Configuration" path="/patients/{patientId}/migrateClinicalData" method="POST" doc:name="HTTP">
+            <http:request-builder>
+                <http:uri-param paramName="patientId" value="#[flowVars.id]"/>
+                <http:header headerName="Accept" value="application/json"/>
+            </http:request-builder>
+        </http:request>
+        <object-to-string-transformer doc:name="http response to string"/>
+        <munit:assert-true message="The HTTP Status code is not correct!" condition="#[messageInboundProperty('http.status').is(eq(202))]" doc:name="assert that - http.status eq 202"/>
+    </munit:test>
+    
+    <munit:test name="post:/patients/patientId/migrateClinicalData:foundInEHR:foundInSFHC" description="Verifying functionality of [post:/patients/patientId/migrateClinicalData:healthcare-ehr2crm-sync-process-api-config-202-application/json]" >
+        <mock:when messageProcessor=".*:.*" doc:name="Mock GET EHR Patient">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['GET Patient from EHR']"/>
+            </mock:with-attributes>
+            <mock:then-return payload="#[getResource('mocks/get_ehr_patient_found.json').asString()]" mimeType="application/json">
+                <mock:inbound-properties>
+                    <mock:inbound-property key="http.status" value="200"/>
+                </mock:inbound-properties>
+            </mock:then-return>
+        </mock:when>
+        <mock:spy messageProcessor=".*:.*" doc:name="Spy GET SFHC Patient">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['GET Patient from SFHC']"/>
+            </mock:with-attributes>
+            <mock:assertions-before-call>
+                <munit:assert-on-equals message="Identifier must be set" expectedValue="12345" actualValue="#[payload.identifier[0].value]" doc:name="Identifier present"/>
+                <munit:assert-on-equals message="Active field must be set to true" expectedValue="#[true]" actualValue="#[payload.active]" doc:name="active = true"/>
+            </mock:assertions-before-call>
+        </mock:spy>
+        <mock:when messageProcessor=".*:.*" doc:name="Mock GET SFHC Patient">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['GET Patient from SFHC']"/>
+            </mock:with-attributes>
+            <mock:then-return payload="#[getResource('mocks/get_sfhc_patient_found.json').asString()]" mimeType="application/json"/>
+        </mock:when>
+        <mock:spy messageProcessor=".*:.*" doc:name="Spy PUT SFHC Patient">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['PUT Patient into SFDC']"/>
+            </mock:with-attributes>
+            <mock:assertions-before-call>
+                <munit:assert-on-equals expectedValue="#[getResource('mocks/put_sfhc_patient.json').asString()]" actualValue="#[message.payloadAs(java.lang.String)]" doc:name="PUT payload as expected"/>
+            </mock:assertions-before-call>
+        </mock:spy>
+        <mock:when messageProcessor=".*:.*" doc:name="Mock PUT SFHC Patient">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['PUT Patient into SFDC']"/>
+            </mock:with-attributes>
+            <mock:then-return payload="#[NullPayload.getInstance()]"/>
+        </mock:when>
+        <mock:when messageProcessor=".*:.*" doc:name="Skip additional migrations">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['Async']"/>
+            </mock:with-attributes>
+            <mock:then-return payload="#[NullPayload.getInstance()]"/>
+        </mock:when>
+        <set-variable variableName="id" value="12345" doc:name="patient ID"/>
+        <http:request config-ref="HTTP_Request_Configuration" method="POST" path="/patients/{patientId}/migrateClinicalData" doc:name="HTTP">
+            <http:request-builder>
+                <http:uri-param paramName="patientId" value="#[flowVars.id]"/>
+                <http:header headerName="Accept" value="application/json"/>
+
+            </http:request-builder>
+        </http:request>
+        <object-to-string-transformer doc:name="http response to string" />
+        <munit:assert-true message="The HTTP Status code is not correct!" condition="#[messageInboundProperty('http.status').is(eq(202))]" doc:name="assert that - http.status eq 202" />
+
+    </munit:test>
+    <munit:test name="migrateConditionsTest-put" description="Verifying functionality of [post:/patients/patientId/migrateClinicalData:healthcare-ehr2crm-sync-process-api-config-202-application/json]">
+        <mock:when messageProcessor=".*:.*" doc:name="Mock GET EHR Conditions">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['GET Conditions from EHR']"/>
+            </mock:with-attributes>
+            <mock:then-return payload="#[getResource('mocks/get_ehr_conditions.json').asString()]" mimeType="application/json"/>
+        </mock:when>
+        <mock:spy messageProcessor=".*:.*" doc:name="Spy GET SFHC Condition">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['GET Condition from SFHC']"/>
+            </mock:with-attributes>
+            <mock:assertions-before-call>
+                <munit:assert-on-equals message="Identifier must be set" expectedValue="8" actualValue="#[payload.identifier[0].value]" doc:name="Identifier present"/>
+            </mock:assertions-before-call>
+        </mock:spy>
+        <mock:when messageProcessor=".*:.*" doc:name="Mock GET SFHC Condition">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['GET Condition from SFHC']"/>
+            </mock:with-attributes>
+            <mock:then-return payload="#[getResource('mocks/get_sfhc_condition_found.json').asString()]" mimeType="application/json"/>
+        </mock:when>
+        <mock:spy messageProcessor=".*:.*" doc:name="Spy PUT SFHC Condition">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['PUT Condition into SFDC']"/>
+            </mock:with-attributes>
+            <mock:assertions-before-call>
+                <munit:assert-on-equals expectedValue="#[getResource('mocks/put_sfhc_condition.json').asString()]" actualValue="#[message.payloadAs(java.lang.String)]" doc:name="PUT payload as expected"/>
+            </mock:assertions-before-call>
+        </mock:spy>
+        <set-variable variableName="patientId" value="12345" doc:name="patientId"/>
+        <flow-ref name="migrateConditions" doc:name="migrateConditions"/>
+        
+    </munit:test>
+    <munit:test name="migrateConditionsTest-post" description="Verifying functionality of [post:/patients/patientId/migrateClinicalData:healthcare-ehr2crm-sync-process-api-config-202-application/json]">
+        <mock:when messageProcessor=".*:.*" doc:name="Mock GET EHR Conditions">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['GET Conditions from EHR']"/>
+            </mock:with-attributes>
+            <mock:then-return payload="#[getResource('mocks/get_ehr_conditions.json').asString()]" mimeType="application/json"/>
+        </mock:when>
+        <mock:spy messageProcessor=".*:.*" doc:name="Spy GET SFHC Condition">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['GET Condition from SFHC']"/>
+            </mock:with-attributes>
+            <mock:assertions-before-call>
+                <munit:assert-on-equals message="Identifier must be set" expectedValue="8" actualValue="#[payload.identifier[0].value]" doc:name="Identifier present"/>
+            </mock:assertions-before-call>
+        </mock:spy>
+        <mock:when messageProcessor=".*:.*" doc:name="Mock GET SFHC Condition">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['GET Condition from SFHC']"/>
+            </mock:with-attributes>
+            <mock:then-return payload="#[getResource('mocks/get_sfhc_condition_not_found.json').asString()]" mimeType="application/json"/>
+        </mock:when>
+        <mock:spy messageProcessor=".*:.*" doc:name="Spy POST SFHC Condition">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['POST Condition into SFDC']"/>
+            </mock:with-attributes>
+            <mock:assertions-before-call>
+                <munit:assert-on-equals expectedValue="#[getResource('mocks/post_sfhc_condition.json').asString()]" actualValue="#[message.payloadAs(java.lang.String)]" doc:name="POST payload as expected"/>
+            </mock:assertions-before-call>
+        </mock:spy>
+        <set-variable variableName="patientId" value="12345" doc:name="patientId"/>
+        <flow-ref name="migrateConditions" doc:name="migrateConditions"/>
+    </munit:test>
+    <munit:test name="migrateAllergiesTest-put" description="Verifying functionality of [post:/patients/patientId/migrateClinicalData:healthcare-ehr2crm-sync-process-api-config-202-application/json]">
+        <mock:when messageProcessor=".*:.*" doc:name="Mock GET EHR Allergies">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['GET AllergyIntolerances from EHR']"/>
+            </mock:with-attributes>
+            <mock:then-return payload="#[getResource('mocks/get_ehr_allergies.json').asString()]" mimeType="application/json"/>
+        </mock:when>
+        <mock:spy messageProcessor=".*:.*" doc:name="Spy GET SFHC AllergyIntolerance">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['GET AllergyIntolerance from SFHC']"/>
+            </mock:with-attributes>
+            <mock:assertions-before-call>
+                <munit:assert-on-equals message="Identifier must be set" expectedValue="7" actualValue="#[payload.identifier[0].value]" doc:name="Identifier present"/>
+            </mock:assertions-before-call>
+        </mock:spy>
+        <mock:when messageProcessor=".*:.*" doc:name="Mock GET SFHC AllergyIntolerance">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['GET AllergyIntolerance from SFHC']"/>
+            </mock:with-attributes>
+            <mock:then-return payload="#[getResource('mocks/get_sfhc_allergy_found.json').asString()]" mimeType="application/json"/>
+        </mock:when>
+        <mock:spy messageProcessor=".*:.*" doc:name="Spy PUT SFHC AllergyIntolerance">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['PUT AllergyIntolerance into SFDC']"/>
+            </mock:with-attributes>
+            <mock:assertions-before-call>
+                <munit:assert-on-equals expectedValue="#[getResource('mocks/put_sfhc_allergy.json').asString()]" actualValue="#[message.payloadAs(java.lang.String)]" doc:name="PUT payload as expected"/>
+            </mock:assertions-before-call>
+        </mock:spy>
+        <set-variable variableName="patientId" value="12345" doc:name="patientId"/>
+        <flow-ref name="migrateAllergyIntolerances" doc:name="migrateAllergyIntolerances"/>
+    </munit:test>
+    <munit:test name="migrateAllergiesTest-post" description="Verifying functionality of [post:/patients/patientId/migrateClinicalData:healthcare-ehr2crm-sync-process-api-config-202-application/json]">
+        <mock:when messageProcessor=".*:.*" doc:name="Mock GET EHR Allergies">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['GET AllergyIntolerances from EHR']"/>
+            </mock:with-attributes>
+            <mock:then-return payload="#[getResource('mocks/get_ehr_allergies.json').asString()]" mimeType="application/json"/>
+        </mock:when>
+        <mock:spy messageProcessor=".*:.*" doc:name="Spy GET SFHC AllergyIntolerance">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['GET AllergyIntolerance from SFHC']"/>
+            </mock:with-attributes>
+            <mock:assertions-before-call>
+                <munit:assert-on-equals message="Identifier must be set" expectedValue="7" actualValue="#[payload.identifier[0].value]" doc:name="Identifier present"/>
+            </mock:assertions-before-call>
+        </mock:spy>
+        <mock:when messageProcessor=".*:.*" doc:name="Mock GET SFHC AllergyIntolerance">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['GET AllergyIntolerance from SFHC']"/>
+            </mock:with-attributes>
+            <mock:then-return payload="#[getResource('mocks/get_sfhc_allergy_not_found.json').asString()]" mimeType="application/json"/>
+        </mock:when>
+        <mock:spy messageProcessor=".*:.*" doc:name="Spy POST SFHC AllergyIntolerance">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['POST AllergyIntolerance into SFDC']"/>
+            </mock:with-attributes>
+            <mock:assertions-before-call>
+                <munit:assert-on-equals expectedValue="#[getResource('mocks/post_sfhc_allergy.json').asString()]" actualValue="#[message.payloadAs(java.lang.String)]" doc:name="POST payload as expected"/>
+            </mock:assertions-before-call>
+        </mock:spy>
+        <set-variable variableName="patientId" value="12345" doc:name="patientId"/>
+        <flow-ref name="migrateAllergyIntolerances" doc:name="migrateAllergyIntolerances"/>
+    </munit:test>
+    <munit:test name="migrateAppointmentsTest-post" description="Verifying functionality of [post:/patients/patientId/migrateClinicalData:healthcare-ehr2crm-sync-process-api-config-202-application/json]">
+        <mock:when messageProcessor=".*:.*" doc:name="Mock GET EHR Appointments">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['GET Appointments from EHR']"/>
+            </mock:with-attributes>
+            <mock:then-return payload="#[getResource('mocks/get_ehr_appointments.json').asString()]" mimeType="application/json"/>
+        </mock:when>
+        <mock:spy messageProcessor=".*:.*" doc:name="Spy GET SFHC Appointments">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['GET Appointment from SFHC']"/>
+            </mock:with-attributes>
+            <mock:assertions-before-call>
+                <munit:assert-on-equals message="Identifier must be set" expectedValue="4" actualValue="#[payload.identifier[0].value]" doc:name="Identifier present"/>
+            </mock:assertions-before-call>
+        </mock:spy>
+        <mock:when messageProcessor=".*:.*" doc:name="Mock GET SFHC Appointment">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['GET Appointment from SFHC']"/>
+            </mock:with-attributes>
+            <mock:then-return payload="#[getResource('mocks/get_sfhc_appointment_not_found.json').asString()]" mimeType="application/json"/>
+        </mock:when>
+        <mock:spy messageProcessor=".*:.*" doc:name="Spy POST SFHC Appointment">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['POST Appointment into SFHC']"/>
+            </mock:with-attributes>
+            <mock:assertions-before-call>
+                <munit:assert-on-equals expectedValue="#[getResource('mocks/post_sfhc_appointment.json').asString()]" actualValue="#[message.payloadAs(java.lang.String)]" doc:name="POST payload as expected"/>
+            </mock:assertions-before-call>
+        </mock:spy>
+        <set-variable variableName="patientId" value="12345" doc:name="patientId"/>
+        <flow-ref name="migrateAppointments" doc:name="migrateAppointments"/>
+    </munit:test>
+    <munit:test name="migrateAppointmentsTest-put" description="Verifying functionality of [post:/patients/patientId/migrateClinicalData:healthcare-ehr2crm-sync-process-api-config-202-application/json]">
+        <mock:when messageProcessor=".*:.*" doc:name="Mock GET EHR Appointments">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['GET Appointments from EHR']"/>
+            </mock:with-attributes>
+            <mock:then-return payload="#[getResource('mocks/get_ehr_appointments.json').asString()]" mimeType="application/json"/>
+        </mock:when>
+        <mock:spy messageProcessor=".*:.*" doc:name="Spy GET SFHC Appointments">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['GET Appointment from SFHC']"/>
+            </mock:with-attributes>
+            <mock:assertions-before-call>
+                <munit:assert-on-equals message="Identifier must be set" expectedValue="4" actualValue="#[payload.identifier[0].value]" doc:name="Identifier present"/>
+            </mock:assertions-before-call>
+        </mock:spy>
+        <mock:when messageProcessor=".*:.*" doc:name="Mock GET SFHC Appointment">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['GET Appointment from SFHC']"/>
+            </mock:with-attributes>
+            <mock:then-return payload="#[getResource('mocks/get_sfhc_appointment_found.json').asString()]" mimeType="application/json"/>
+        </mock:when>
+        <mock:spy messageProcessor=".*:.*" doc:name="Spy PUT SFHC Appointment">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['PUT Appointment into SFHC']"/>
+            </mock:with-attributes>
+            <mock:assertions-before-call>
+                <munit:assert-on-equals expectedValue="#[getResource('mocks/put_sfhc_appointment.json').asString()]" actualValue="#[message.payloadAs(java.lang.String)]" doc:name="PUT payload as expected"/>
+            </mock:assertions-before-call>
+        </mock:spy>
+        <set-variable variableName="patientId" value="12345" doc:name="patientId"/>
+        <flow-ref name="migrateAppointments" doc:name="migrateAppointments"/>
+    </munit:test>
+    
+    
+</mule>

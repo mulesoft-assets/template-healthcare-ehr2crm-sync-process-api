@@ -1,0 +1,15 @@
+{
+  "resourceType": "Bundle",
+  "type": "searchset",
+  "link": [
+    {
+      "relation": "self",
+      "url": "http://dev-sfhc2fhir-system-api.cloudhub.io/api/Patient?identifier=12345"
+    }
+  ],
+  "meta": {
+    "lastUpdated": "2016-12-12T06:27:44.232Z"
+  },
+  "total": 0,
+  "entry": []
+}

@@ -1,0 +1,15 @@
+{
+  "resourceType": "Bundle",
+  "type": "searchset",
+  "link": [
+    {
+      "relation": "self",
+      "url": "http://dev-sfhc2fhir-system-api.cloudhub.io/api/Appointment?identifier=4"
+    }
+  ],
+  "meta": {
+    "lastUpdated": "2016-12-12T10:07:10.057Z"
+  },
+  "total": 0,
+  "entry": []
+}

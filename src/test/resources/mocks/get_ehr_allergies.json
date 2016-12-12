@@ -1,0 +1,38 @@
+{
+  "resourceType": "Bundle",
+  "type": "searchset",
+  "link": [
+    {
+      "relation": "self",
+      "url": "http://dev-ehr2fhir-system-api.cloudhub.io/api/Patient/12345/AllergyIntolerance"
+    }
+  ],
+  "meta": {
+    "lastUpdated": "2016-12-12T09:43:31.985Z"
+  },
+  "total": 1,
+  "entry": [
+    {
+      "fullUrl": "http://dev-ehr2fhir-system-api.cloudhub.io/apiAllergyIntolerance/7",
+      "resource": {
+        "resourceType": "AllergyIntolerance",
+        "id": "7",
+        "patient": {
+          "reference": "Patient/13248402"
+        },
+        "reporter": {
+          "reference": "Patient/13248402"
+        },
+        "substance": {
+          "coding": [
+            {
+              "display": "Penicillin"
+            }
+          ]
+        },
+        "recordedDate": "2016-11-03",
+        "status": "confirmed"
+      }
+    }
+  ]
+}

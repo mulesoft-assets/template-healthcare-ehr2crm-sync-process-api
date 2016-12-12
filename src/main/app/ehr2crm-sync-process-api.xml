@@ -33,11 +33,11 @@ http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/
         <apikit:flow-mapping resource="/patients/{patientId}/migrateClinicalData" action="post" flow-ref="post:/patients/{patientId}/migrateClinicalData:api-config"/>
 
     </apikit:config>
-    <http:request-config name="ehr-system-api" host="${ehr.system.api.host}" port="${ehr.system.api.port}" basePath="${ehr.system.api.basePath}" doc:name="HTTP Request Configuration">
+    <http:request-config name="ehr-system-api" protocol="HTTP" host="${ehr.system.api.host}" port="${ehr.system.api.port}" basePath="${ehr.system.api.basePath}" doc:name="HTTP Request Configuration">
         <http:raml-api-configuration location="healthcare-system-api/healthcare-system-api.raml"/>
 
     </http:request-config>
-    <http:request-config name="sfhc-system-api" host="${sfdc.system.api.host}" port="${sfdc.system.api.port}" basePath="${sfdc.system.api.basePath}" doc:name="HTTP Request Configuration">
+    <http:request-config name="sfhc-system-api" protocol="HTTP" host="${sfdc.system.api.host}" port="${sfdc.system.api.port}" basePath="${sfdc.system.api.basePath}" doc:name="HTTP Request Configuration">
         <http:raml-api-configuration location="healthcare-system-api/healthcare-system-api.raml"/>
     </http:request-config>
 
@@ -48,36 +48,43 @@ http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/
     </flow>
 
      <flow name="post:/patients/{patientId}/migrateClinicalData:api-config"  >
-        <flow-ref name="migratePatient" doc:name="migratePatient"/>
-        <set-payload value="#[NullPayload.getInstance()]" doc:name="NullPayload"/>
-
-        <async doc:name="Async">
-            <scatter-gather doc:name="Scatter-Gather">
-		        <flow-ref name="migrateConditions" doc:name="migrateConditions"/>
-		        <flow-ref name="migrateAllergyIntolerances" doc:name="migrateAllergyIntolerances"/>
-                <flow-ref name="migrateAppointments" doc:name="migrateAppointments"/>
-            </scatter-gather>
-        </async>
-        <logger message="The Async POST process has started." level="INFO" doc:name="Log success"/>
-        <dw:transform-message doc:name="Create response JSON">
-            <dw:set-payload><![CDATA[%dw 1.0
+        <http:request config-ref="ehr-system-api" path="/Patient/{id}" method="GET" doc:name="GET Patient from EHR">
+            <http:request-builder>
+                <http:uri-param paramName="id" value="#[flowVars.patientId]"/>
+            </http:request-builder>
+            <http:success-status-code-validator values="200,404"/>
+        </http:request>
+        <choice doc:name="Patient found?">
+            <when expression="#[message.inboundProperties.'http.status' == 200]">
+                <flow-ref name="migratePatient" doc:name="migratePatient"/>
+                <set-payload value="#[NullPayload.getInstance()]" doc:name="NullPayload"/>
+                <async doc:name="Async">
+                    <scatter-gather doc:name="Scatter-Gather">
+                        <flow-ref name="migrateConditions" doc:name="migrateConditions"/>
+                        <flow-ref name="migrateAllergyIntolerances" doc:name="migrateAllergyIntolerances"/>
+                        <flow-ref name="migrateAppointments" doc:name="migrateAppointments"/>
+                    </scatter-gather>
+                </async>
+                <logger message="The Async POST process has started." level="INFO" doc:name="Log success"/>
+                <dw:transform-message doc:name="Create response JSON">
+                    <dw:set-payload><![CDATA[%dw 1.0
 %output application/json
 ---
 {
 	"message": "The migration process has started and will be completed asynchronously."
 }]]></dw:set-payload>
-        </dw:transform-message>
+                </dw:transform-message>
+            </when>
+            <otherwise>
+                <set-property propertyName="http.status" value="#[404]" doc:name="404"/>
+                <set-payload value="{&quot;message&quot;: &quot;Patient not found&quot;}" doc:name="Not Found"/>
+            </otherwise>
+        </choice>
+
 
     </flow>
     <sub-flow name="migratePatient">
 
-
-        <http:request config-ref="ehr-system-api" path="/Patient/{id}" method="GET" doc:name="GET Patient from EHR">
-            <http:request-builder>
-                <http:uri-param paramName="id" value="#[flowVars.patientId]"/>
-            </http:request-builder>
-
-        </http:request>
         <dw:transform-message doc:name="Add identifier and active field">
             <dw:set-payload><![CDATA[%dw 1.0
 %output application/java
@@ -375,7 +382,7 @@ payload.entry[0].resource.id when payload.total > 0 otherwise null]]></dw:set-pa
             <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
             <set-payload value="{ &quot;message&quot;: &quot;Unauthorized&quot; ,&quot;service&quot; : &quot;clinicalData&quot;}" doc:name="Set Payload"/>
         </apikit:mapping>
-        <apikit:mapping statusCode="404">
+        <apikit:mapping statusCode="404" doc:description="Only GET EHR Patient by ID is supposed to return 404 if not found">
             <apikit:exception value="org.mule.module.apikit.exception.NotFoundException" />
             <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
             <set-payload value="{ &quot;message&quot;: &quot;Resource not found&quot;,&quot;service&quot; : &quot;clinicalData&quot; }" doc:name="Set Payload"/>

@@ -1,0 +1,1 @@
+{"resourceType":"Condition","id":"8","patient":{"reference":"Patient/12345"},"asserter":{"reference":"Patient/12345","display":""},"code":{"coding":[{"code":"73211009","display":"Diabetes mellitus","system":"http://snomed.info/sct"}]},"verificationStatus":"confirmed","onsetDateTime":"2016-11-02","identifier":[{"value":"8"}]}
