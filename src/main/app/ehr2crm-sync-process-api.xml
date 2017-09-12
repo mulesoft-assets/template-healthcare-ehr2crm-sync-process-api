@@ -40,7 +40,7 @@ http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/
     <http:request-config name="sfhc-system-api" protocol="HTTP" host="${sfdc.system.api.host}" port="${sfdc.system.api.port}" basePath="${sfdc.system.api.basePath}" doc:name="HTTP Request Configuration">
         <http:raml-api-configuration location="healthcare-system-api/healthcare-system-api.raml"/>
     </http:request-config>
-
+    
     <flow name="api-main">
         <http:listener config-ref="api-httpListenerConfig" path="/api/*" doc:name="HTTP"/>
         <apikit:router config-ref="api-config" doc:name="APIkit Router"/>
@@ -93,7 +93,7 @@ payload ++
 { 
 	active: true,
 	identifier : [{
-		value: payload.id
+		value: payload.id as :string {format: "#"}
 	}]
 }
 ]]></dw:set-payload>
@@ -148,7 +148,7 @@ payload.entry map (
 	$.resource ++ 
 	{ 
 		identifier : [{
-			value: $.resource.id
+			value: $.resource.id as :string {format: "#"}
 		}]
 	}
 )]]></dw:set-payload>
@@ -208,7 +208,7 @@ payload.entry filter $.resource.verificationStatus == "confirmed" map
 	$.resource ++ 
 	{ 
 		identifier : [{
-			value: $.resource.id
+			value: $.resource.id  as :string {format: "#"}
 		}]
 	}
 )]]></dw:set-payload>
@@ -268,7 +268,7 @@ payload.entry filter $.resource.status == "confirmed" map (
 	$.resource ++ 
 	{ 
 		identifier : [{
-			value: $.resource.id
+			value: $.resource.id as :string {format: "#"}
 		}]
 	}
 )]]></dw:set-payload>
@@ -327,7 +327,7 @@ payload.entry map (
 	$.resource ++ 
 	{ 
 		identifier : [{
-			value: $.resource.id
+			value: $.resource.id as :string {format: "#"}
 		}]
 	}
 )]]></dw:set-payload>
