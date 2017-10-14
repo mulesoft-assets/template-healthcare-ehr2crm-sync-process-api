@@ -111,7 +111,7 @@ payload ++
                     <dw:set-payload><![CDATA[%dw 1.0
 %output application/java
 ---
-payload.entry[0].resource.id when (payload.total > 0) otherwise null]]></dw:set-payload>
+payload.entry[0].resource.id as :string {format: "#"} when (payload.total > 0) otherwise null]]></dw:set-payload>
                 </dw:transform-message>
             </processor-chain>
         </enricher>
@@ -167,7 +167,7 @@ payload.entry map (
                         <dw:set-payload><![CDATA[%dw 1.0
 %output application/java
 ---
-payload.entry[0].resource.id when payload.total > 0 otherwise null]]></dw:set-payload>
+payload.entry[0].resource.id as :string {format: "#"} when payload.total > 0 otherwise null]]></dw:set-payload>
                     </dw:transform-message>
                 </processor-chain>
 
@@ -208,7 +208,7 @@ payload.entry filter $.resource.verificationStatus == "confirmed" map
 	$.resource ++ 
 	{ 
 		identifier : [{
-			value: $.resource.id  as :string {format: "#"}
+			value: $.resource.id as :string {format: "#"}
 		}]
 	}
 )]]></dw:set-payload>
@@ -227,7 +227,7 @@ payload.entry filter $.resource.verificationStatus == "confirmed" map
                         <dw:set-payload><![CDATA[%dw 1.0
 %output application/java
 ---
-payload.entry[0].resource.id when payload.total > 0 otherwise null]]></dw:set-payload>
+payload.entry[0].resource.id as :string {format: "#"} when payload.total > 0 otherwise null]]></dw:set-payload>
                     </dw:transform-message>
                 </processor-chain>
             </enricher>
@@ -351,7 +351,7 @@ payload map (($ - "minutesDuration") when  ($.minutesDuration == "") otherwise $
                         <dw:set-payload><![CDATA[%dw 1.0
 %output application/java
 ---
-payload.entry[0].resource.id when payload.total > 0 otherwise null]]></dw:set-payload>
+payload.entry[0].resource.id as :string {format: "#"} when payload.total > 0 otherwise null]]></dw:set-payload>
                     </dw:transform-message>
                 </processor-chain>
             </enricher>
