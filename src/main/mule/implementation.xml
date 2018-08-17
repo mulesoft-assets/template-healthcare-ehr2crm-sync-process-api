@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="migrateClinicalData" doc:id="126dba1a-129b-4e05-9fc6-261947239b36" >
+		<flow-ref doc:name="migratePatient" doc:id="d18887a5-58db-4051-abfc-6af279bdef6e" name="migratePatient"/>
+		<async doc:name="Async" doc:id="ef2a37f9-f095-41b3-8dd9-0a243b106a45" >
+			<scatter-gather doc:name="Scatter-Gather" doc:id="e1c02c98-4850-4d49-878b-c72ffcfae437">
+				<route >
+					<flow-ref doc:name="migrateConditions" doc:id="7207f03c-e4d9-41aa-b71e-0d7c190a5afd" name="migrateConditions" />
+				</route>
+				<route >
+					<flow-ref doc:name="migrateAllergyIntolerances" doc:id="acfcba29-e8b6-44ed-a72b-04c5a8e81b00" name="migrateAllergyIntolerances" />
+				</route>
+				<route >
+					<flow-ref doc:name="migrateAppointments" doc:id="2104b22e-a63b-4bec-9b71-e4ba28b32079" name="migrateAppointments" />
+				</route>
+		</scatter-gather> 
+		</async>
+		<logger level="INFO" doc:name="Logger" doc:id="47200c6a-d31a-487e-9a6c-6480aec00f52" message="The Async POST process has started."/>
+		<ee:transform doc:name="Repsonse Message" doc:id="063a78a8-9f43-487a-bb54-762c7525ef83">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message": "The migration process has started and will be completed asynchronously."
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="migratePatient" doc:id="d584ebf2-194f-4082-ab32-091e25743861" >
+		<http:request method="GET" doc:name="GET Patient from EHR" doc:id="70e35331-10a0-45c8-b578-671bc69dd4f6" config-ref="EHR_Request_configuration" path="/Patient/{id}">
+			<http:uri-params><![CDATA[#[output applicaton/java
+---
+{
+	"id" : vars.patientId
+}]]]></http:uri-params>
+		</http:request>
+		<ee:transform doc:name="Add identifier and active field" doc:id="534dad31-a81a-4199-8df4-de8a00a7fc9e" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="patient" ><![CDATA[%dw 2.0
+output application/json
+---
+payload ++ 
+	{ 
+		active: true,
+		identifier : [{
+			value: payload.id as String {format: "#"}
+		}]
+	}
+]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<http:request method="GET" doc:name="GET Patient from SFHC" doc:id="f1a43401-b5e3-4cfe-852c-7fe183bf678e" config-ref="SFHC_Request_configuration" path="/Patient">
+			<http:query-params ><![CDATA[#[output applicaton/java
+---
+{
+	"identifier" : vars.patient.identifier[0].value
+}]]]></http:query-params>
+		</http:request>
+		<ee:transform doc:name="Get existing Patient Id from JSON response" doc:id="a5d3a7be-3f23-4538-9cd3-36b15080404f" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+if (payload.total > 0) payload.entry[0].resource.id as String {format: "#"} else null]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<choice doc:name="Is patient missing in SFHC?" doc:id="5027782e-9a8e-45ec-8204-d032637c1424" >
+			<when expression="#[payload == null]" >
+				<logger level="INFO" doc:name="Logger" doc:id="cf06c9e0-e4d1-4c72-b3be-c366907930b1" message="Create Patient: #[vars.patient]"/>
+				<http:request method="POST" doc:name="POST Patient into SFDC" doc:id="ce7fc5bf-f162-4792-b262-e47a223c8e29" config-ref="SFHC_Request_configuration" path="/Patient">
+					<http:body ><![CDATA[#[vars.patient]]]></http:body>
+				</http:request>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Logger" doc:id="43da9eaf-b6bf-4661-8e85-82536c10ff5b" message="Update Patient:#[vars.patient]"/>
+				<http:request method="PUT" doc:name="PUT Patient into SFDC" doc:id="42e19b38-4abd-4903-899d-ae5bc30b108f" config-ref="SFHC_Request_configuration" path="/Patient/{id}">
+					<http:body ><![CDATA[#[vars.patient]]]></http:body>
+					<http:uri-params ><![CDATA[#[output applicaton/java
+---
+{
+	"id" : payload
+}]]]></http:uri-params>
+				</http:request>
+			</otherwise>
+		</choice>
+	</flow>
+	<flow name="migrateConditions" doc:id="ed3d3f2c-0e1a-4ae3-a33a-e5c56d3a00f3" >
+		<http:request method="GET" doc:name="GET Conditions from EHR" doc:id="43be9f19-b718-47bc-b650-6d353ba3b36b" config-ref="EHR_Request_configuration" path="/Patient/{id}/Condition">
+			<http:uri-params ><![CDATA[#[output applicaton/java
+---
+{
+	"id" : vars.patientId
+}]]]></http:uri-params>
+		</http:request>
+		<ee:transform doc:name="Extract Conditions and add identifier" doc:id="c6d7c5a4-caa2-4073-8ed0-2380cff4172f" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload.entry filter $.resource.verificationStatus == "confirmed" map 
+(
+	$.resource ++ 
+	{ 
+		identifier : [{
+			value: $.resource.id as String {format: "#"}
+		}]
+	}
+)]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<foreach doc:name="For Each Condition" doc:id="9e8d3a86-5b63-465c-9fc4-d08b4fc4bbc3" collection="#[payload]">
+			<set-variable value="#[payload]" doc:name="Save condition" doc:id="d1fa8426-1012-4fd1-a054-cba6027ea3be" variableName="condition"/>
+			<http:request method="GET" doc:name="GET Condition from SFHC" doc:id="7c32a857-d2f6-408e-a215-48de55a67cac" config-ref="SFHC_Request_configuration" path="/Condition">
+				<http:query-params ><![CDATA[#[output applicaton/java
+---
+{
+	"identifier" : "vars.condition.identifier[0].value"
+}]]]></http:query-params>
+			</http:request>
+			<ee:transform doc:name="extract ID" doc:id="a8305b61-8f5c-46ff-8bf3-f63a97a383cd" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+if(payload.total > 0) payload.entry[0].resource.id as String {format: "#"} else null]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<choice doc:name="Is the Condition missing in SFHC?" doc:id="310b9fdc-49a3-4135-9ee8-768f5581cd0d" >
+				<when expression="#[payload == null]" >
+					<logger level="INFO" doc:name="Logger" doc:id="e9a744e8-d9ab-4c02-9526-4a52d76e0804" message="Create Condition: #[vars.condition]"/>
+					<http:request method="POST" doc:name="POST Condition into SFDC" doc:id="c888e651-57b9-4fec-b85a-89fcb93fb92c" config-ref="SFHC_Request_configuration" path="/Condition">
+						<http:body ><![CDATA[#[output application/json --- vars.condition]]]></http:body>
+					</http:request>
+				</when>
+				<otherwise >
+					<logger level="INFO" doc:name="Logger" doc:id="12c63c12-668f-42e8-86fa-b08a130888fd" message="Update Condition: #[vars.condition]"/>
+					<http:request method="PUT" doc:name="PUT Condition into SFDC" doc:id="12f6202c-ceaf-4153-ad32-fda0284e1955" path="/Condition/{id}" config-ref="SFHC_Request_configuration">
+						<http:body ><![CDATA[#[output application/json --- vars.condition]]]></http:body>
+						<http:uri-params ><![CDATA[#[output applicaton/java
+---
+{
+	"Id" : payload
+}]]]></http:uri-params>
+					</http:request>
+				</otherwise>
+			</choice>
+		</foreach>
+	</flow>
+	<flow name="migrateAllergyIntolerances" doc:id="028504af-1cbd-486d-998f-f9133042c069" >
+		<http:request method="GET" doc:name="GET AllergyIntolerances from EHR" doc:id="beaff28d-9f13-4dd7-b55b-958775fe866c" config-ref="EHR_Request_configuration" path="/Patient/{id}/AllergyIntolerance">
+			<http:uri-params ><![CDATA[#[output applicaton/java
+---
+{
+	"id" : vars.patientId
+}]]]></http:uri-params>
+		</http:request>
+		<ee:transform doc:name="Extract Allergies and add identifier" doc:id="ededcf03-315c-4a9d-afa1-afe96d7c8514" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload.entry filter $.resource.verificationStatus == "confirmed" map (
+
+	$.resource ++ 
+	{ 
+		identifier : [{
+			value: $.resource.id as String {format: "#"}
+		}]
+	}
+)]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<foreach doc:name="For Each Allergy Intolerance" doc:id="a81b6a5d-1c34-42fd-a5c5-d1e441291843" collection="#[payload]">
+			<set-variable value="#[payload]" doc:name="Save allergyIntolerance" doc:id="a064ac28-1fe3-416a-bd59-62c80453833a" variableName="allergy"/>
+			<http:request method="GET" doc:name="GET AllergyIntolerance from SFHC" doc:id="615c9e2b-e3f7-4f3a-9ad7-7b8770e0b49c" config-ref="SFHC_Request_configuration" path="/AllergyIntolerance">
+				<http:query-params ><![CDATA[#[output applicaton/java
+---
+{
+	"identifier" : "vars.allergy.identifier[0].value"
+}]]]></http:query-params>
+			</http:request>
+			<ee:transform doc:name="extract ID" doc:id="54642ff9-7d96-416a-88c6-c0b6107265ca" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+if(payload.total > 0) payload.entry[0].resource.id as String {format: "#"} else null]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<choice doc:name="Is the AllergyIntolerance missing in SFHC?" doc:id="5458accc-ad5b-49ac-b284-cdcd321f9b9c" >
+				<when expression="#[payload == null]" >
+					<logger level="INFO" doc:name="Logger" doc:id="93420a05-e9c1-4675-a72b-744b50d93513" message="Create Allergy Intolerance: #[vars.allergy]"/>
+					<http:request method="POST" doc:name="POST AllergyIntolerance into SFDC" doc:id="0029cfe7-5966-4e51-9704-e397b0771363" config-ref="SFHC_Request_configuration" path="/AllergyIntolerance">
+						<http:body ><![CDATA[#[output application/json --- vars.allergy]]]></http:body>
+					</http:request>
+				</when>
+				<otherwise >
+					<logger level="INFO" doc:name="Logger" doc:id="072ceba0-246a-4489-87e9-d4740958d79f" message="Update Allergy Intolerance: #[vars.allergy]"/>
+					<http:request method="PUT" doc:name="PUT AllergyIntolerance into SFDC" doc:id="1d65cf14-697c-41e2-838a-e126cb24d44c" path="/AllergyIntolerance/{id}" config-ref="SFHC_Request_configuration">
+						<http:body ><![CDATA[#[output application/json --- vars.allergy]]]></http:body>
+						<http:uri-params ><![CDATA[#[output applicaton/java
+---
+{
+	"id" : payload
+}]]]></http:uri-params>
+					</http:request>
+				</otherwise>
+			</choice>
+		</foreach>
+	</flow>
+	<flow name="migrateAppointments" doc:id="db423461-126a-4195-ad39-a765a9f553ce" >
+		<http:request method="GET" doc:name="GET Appointments from EHR" doc:id="8d35e840-9086-4068-a0d9-a0d52cf90c39" config-ref="EHR_Request_configuration" path="/Patient/{id}/Appointment">
+			<http:uri-params ><![CDATA[#[output applicaton/java
+---
+{
+	"id" : vars.patientId
+}]]]></http:uri-params>
+		</http:request>
+		<ee:transform doc:name="Extract Appointments and add identifier" doc:id="ee4b4891-3d84-40fa-9872-31366bee6efb" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload.entry map (
+	$.resource ++ 
+	{ 
+		identifier : [{
+			value: $.resource.id as String {format: "#"}
+		}]
+	}  
+)]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<foreach doc:name="For Each Appointment" doc:id="c818a2a7-6520-4839-8f2c-29f8459bec8e" collection="#[payload]">
+			<ee:transform doc:name="Save appointment" doc:id="256ae12f-e98e-4023-bec5-f9ab3a70f65e" >
+				<ee:message >
+				</ee:message>
+				<ee:variables >
+					<ee:set-variable variableName="appointment" ><![CDATA[%dw 2.0
+output application/java
+---
+if(payload.minutesDuration == "") (payload - "minutesDuration") else payload]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+			<http:request method="GET" doc:name="GET Appointment from SFHC" doc:id="67e48166-e105-40ef-8f04-86ffe8a375f1" config-ref="SFHC_Request_configuration" path="/Appointment">
+				<http:query-params ><![CDATA[#[output applicaton/java
+---
+{
+	"identifier" : "vars.appointment.identifier[0].value"
+}]]]></http:query-params>
+			</http:request>
+			<ee:transform doc:name="extract ID" doc:id="af706c8b-57bf-4a0e-9112-a4b376bf6520" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+if(payload.total > 0) payload.entry[0].resource.id as String {format: "#"} else null]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<choice doc:name="Is the Appointment missing in SFHC?" doc:id="dab27163-4f21-44cf-a792-282f183fc3b1" >
+				<when expression="#[payload == null]" >
+					<logger level="INFO" doc:name="Logger" doc:id="a3c0d2a9-3e43-4ac0-82a7-fc09316ae903" message="Create Appointment: #[vars.appointment]"/>
+					<http:request method="POST" doc:name="POST Appointment into SFHC" doc:id="0ff9c791-d31e-4548-9ea0-e424ff7aab17" config-ref="SFHC_Request_configuration" path="/Appointment">
+						<http:body ><![CDATA[#[output application/json --- vars.appointment]]]></http:body>
+					</http:request>
+				</when>
+				<otherwise >
+					<logger level="INFO" doc:name="Logger" doc:id="b4574711-5ca7-4cb0-8852-148447a3250c" message="Update Appointment: #[vars.appointment]"/>
+					<http:request method="PUT" doc:name="PUT Appointment into SFHC" doc:id="e620dc02-ec50-4a51-a273-95b44e69822d" config-ref="SFHC_Request_configuration" path="/Appointment/{id}">
+						<http:body ><![CDATA[#[output application/json --- vars.appointment]]]></http:body>
+						<http:uri-params ><![CDATA[#[output applicaton/java
+---
+{
+	"id" : payload
+}]]]></http:uri-params>
+					</http:request>
+				</otherwise>
+			</choice>
+		</foreach>
+	</flow>
+</mule>
