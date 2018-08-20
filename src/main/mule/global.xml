@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+	
+	<http:listener-config name="healthcare_ehr2crm_sync_process_api-httpListenerConfig">
+        <http:listener-connection host="0.0.0.0" port="${http.port}" />
+    </http:listener-config>
+    <http:request-config name="EHR_Request_configuration" doc:name="HTTP Request configuration" doc:id="7800aee5-9135-4803-ab51-6bd7003ee0b4" basePath="${ehr.system.api.basePath}" >
+		<http:request-connection host="${ehr.system.api.host}" port="${ehr.system.api.port}" />
+	</http:request-config>
+	<http:request-config name="SFHC_Request_configuration" doc:name="HTTP Request configuration" doc:id="5f5700ce-aaaf-4115-b086-67a8d93bd81c" basePath="${sfdc.system.api.basePath}" >
+		<http:request-connection host="${sfdc.system.api.host}" port="${sfdc.system.api.port}" />
+	</http:request-config>
+    <apikit:config name="healthcare_ehr2crm_sync_process_api-config" raml="healthcare_ehr2crm_sync_process_api.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+	<configuration-properties doc:name="Configuration properties" doc:id="f2bee23b-560e-4dbe-99ca-531ce5e3ae2d" file="common.properties" />
+	<configuration-properties doc:name="Configuration properties" doc:id="60d3c07d-70e6-42cc-831e-5f93d94d235d" file="mule.${mule.env}.properties" />
+    
+	
+</mule>
