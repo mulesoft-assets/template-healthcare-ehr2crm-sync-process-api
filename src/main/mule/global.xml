@@ -20,6 +20,8 @@ http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/htt
     <apikit:config name="healthcare_ehr2crm_sync_process_api-config" raml="healthcare_ehr2crm_sync_process_api.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
 	<configuration-properties doc:name="Configuration properties" doc:id="f2bee23b-560e-4dbe-99ca-531ce5e3ae2d" file="common.properties" />
 	<configuration-properties doc:name="Configuration properties" doc:id="60d3c07d-70e6-42cc-831e-5f93d94d235d" file="mule.${mule.env}.properties" />
+	<global-property doc:name="Global Property" doc:id="dfb38dbe-7cbc-4c40-b907-697b832df4c6" name="mule.env" value="dev" />
+	
     
 	
 </mule>
