@@ -7,7 +7,8 @@
 	xsi:schemaLocation="
 http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
-	
+
+	<global-property doc:name="Global Property" doc:id="1a8be3cf-60fe-4cf1-9911-30942effba3f" name="mule.env" value="dev" />	
 	<http:listener-config name="healthcare_ehr2crm_sync_process_api-httpListenerConfig">
         <http:listener-connection host="0.0.0.0" port="${http.port}" />
     </http:listener-config>
@@ -20,8 +21,5 @@ http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/htt
     <apikit:config name="healthcare_ehr2crm_sync_process_api-config" raml="healthcare_ehr2crm_sync_process_api.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
 	<configuration-properties doc:name="Configuration properties" doc:id="f2bee23b-560e-4dbe-99ca-531ce5e3ae2d" file="common.properties" />
 	<configuration-properties doc:name="Configuration properties" doc:id="60d3c07d-70e6-42cc-831e-5f93d94d235d" file="mule.${mule.env}.properties" />
-	<global-property doc:name="Global Property" doc:id="dfb38dbe-7cbc-4c40-b907-697b832df4c6" name="mule.env" value="dev" />
-	
-    
-	
+
 </mule>
