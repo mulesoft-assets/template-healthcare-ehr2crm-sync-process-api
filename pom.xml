@@ -7,7 +7,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>template-healthcare-ehr2crm-sync-process-api</artifactId>
-    <version>2.1.0</version>
+    <version>2.1.1-SNAPSHOT</version>
     <packaging>mule-application</packaging>
     <name>template-healthcare-ehr2crm-sync-process-api</name>
     <dependencies>
@@ -49,8 +49,4 @@
             </plugin>
         </plugins>
     </build>
-
-  <scm>
-    <tag>v2.1.0</tag>
-  </scm>
 </project>
