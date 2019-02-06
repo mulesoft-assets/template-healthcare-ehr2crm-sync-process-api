@@ -1,5 +1,17 @@
 # Template EHR to CRM Sync Process API
 
+With the systems like Salesforce Health Cloud there is a need to bridge patient data from EHRs like Epic to a more light-weight patient management systems. This template provides an API implementation best practice to synchronize patient and its related data from EHR into system like Salesforce Health Cloud. This Process API encapsulates the underlying business processes that interact with source and target systems via a set of FHIR System APIs.
+
+![](https://www.lucidchart.com/publicSegments/view/6c0eab9d-b684-43bd-96c5-61b323fd6399/image.png)
+
+## Implementation Flow in Anypoint Studio
+
+![021c12f7-8f84-4d43-a725-b2ac1b6a0c82-image.png](https://exchange2-file-upload-service-kprod.s3.us-east-1.amazonaws.com:443/021c12f7-8f84-4d43-a725-b2ac1b6a0c82-image.png)
+
+## Catalyst Accelerator for Healthcare
+
+This API implementation is one of many components included in [Catalyst Accelerator for Healthcare](/exchange/68ef9520-24e9-4cf2-b2f5-620025690913/catalyst-accelerator-for-healthcare/). It provides organizations with connectivity assets that accelerate project delivery in healthcare, including pre-built API designs and implementations that support core healthcare business processes. Contact [info@mulesoft.com](mailto:info@mulesoft.com) for more information.
+
 # License Agreement 
 This template is subject to the conditions of the [MuleSoft License Agreement](https://s3.amazonaws.com/templates-examples/AnypointTemplateLicense.pdf). Review the terms of the license before downloading and using this template. You can use this template for free with the Mule Enterprise Edition, CloudHub, or as a trial in Anypoint Studio. 
 
