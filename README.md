@@ -23,14 +23,14 @@ Synchronization of the following FHIR objects are supported by this API:
 
 To run this template, there are certain preconditions that must be considered. Failing to do so could lead to unexpected behavior of the template.
 
-### Run the application
+### Run the Application
 
 
 # Run it!
 Simple steps to get Healthcare EHR to CRM Sync Process API running.
 See below.
 
-## Run on premise
+## Run On Premises
 In this section we detail the way you should run your template on your computer.
 
 ### Where to Download Anypoint Studio and the Mule Runtime
@@ -40,13 +40,13 @@ If you are new to Mule, download this software:
 - [Download Anypoint Studio](https://www.mulesoft.com/platform/studio)
 - [Download Mule runtime](https://www.mulesoft.com/lp/dl/mule-esb-enterprise)
 
-### Import a template into Studio
+### Import a Template into Studio
 Anypoint Studio offers several ways to import a project into the workspace, for instance: 
 
 - Anypoint Studio Project from File System
 - Packaged mule application (.jar)
 
-You can find a detailed description on how to do so in this [Documentation Page](https://docs.mulesoft.com/anypoint-studio/v/7.2/).
+You can find a detailed description on how to do so in this [About Anypoint Studio](https://docs.mulesoft.com/anypoint-studio/v/7.2/).
 
 ### Run in Studio
 
@@ -67,7 +67,7 @@ Add properties to a property file, for example in mule.prod.properties, and run 
 When creating your application in Runtime Manager, click an application and click **Manage Application > Properties** to set the environment variables described in the Properties to Configure section.
 
 ## Deploy in CloudHub
-In Studio, right click your project name in Package Explorer and select Anypoint Platform > Deploy on CloudHub.
+In Studio, right click your project name in Package Explorer and select **Anypoint Platform > Deploy on CloudHub**.
 
 ## Properties to Configure
 To use this template, configure properties in a properties file or in Runtime Manager as environment variables.
