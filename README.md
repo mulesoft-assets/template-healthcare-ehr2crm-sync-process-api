@@ -8,9 +8,9 @@ With the systems like Salesforce Health Cloud there is a need to bridge patient 
 
 ![021c12f7-8f84-4d43-a725-b2ac1b6a0c82-image.png](https://exchange2-file-upload-service-kprod.s3.us-east-1.amazonaws.com:443/021c12f7-8f84-4d43-a725-b2ac1b6a0c82-image.png)
 
-## Catalyst Accelerator for Healthcare
+## Accelerator for Healthcare
 
-This API implementation is one of many components included in [Catalyst Accelerator for Healthcare](/exchange/68ef9520-24e9-4cf2-b2f5-620025690913/catalyst-accelerator-for-healthcare/). It provides organizations with connectivity assets that accelerate project delivery in healthcare, including pre-built API designs and implementations that support core healthcare business processes. Contact [info@mulesoft.com](mailto:info@mulesoft.com) for more information.
+This API implementation is one of many components included in [Accelerator for Healthcare](/exchange/68ef9520-24e9-4cf2-b2f5-620025690913/catalyst-accelerator-for-healthcare/). This API provides organizations with connectivity assets that accelerate project delivery in healthcare, including pre-built API designs and implementations that support core healthcare business processes. Contact [info@mulesoft.com](mailto:info@mulesoft.com) for more information.
 
 # License Agreement 
 This template is subject to the conditions of the [MuleSoft License Agreement](https://s3.amazonaws.com/templates-examples/AnypointTemplateLicense.pdf). Review the terms of the license before downloading and using this template. You can use this template for free with the Mule Enterprise Edition, CloudHub, or as a trial in Anypoint Studio. 
@@ -58,7 +58,7 @@ Anypoint Studio offers several ways to import a project into the workspace, for 
 - Anypoint Studio Project from File System
 - Packaged mule application (.jar)
 
-You can find a detailed description on how to do so in this [About Anypoint Studio](https://docs.mulesoft.com/anypoint-studio/v/7.2/).
+You can find a detailed description on how to do so in this [About Anypoint Studio](https://docs.mulesoft.com/studio/7.3/).
 
 ### Run in Studio
 
@@ -76,10 +76,10 @@ After opening your template in Anypoint Studio, follow these steps to run it:
 Add properties to a property file, for example in mule.prod.properties, and run your application with an environment variable for each property. In this example, use `mule.env=prod`.
 
 ## Run on Runtime Manager
-When creating your application in Runtime Manager, click an application and click **Manage Application > Properties** to set the environment variables described in the Properties to Configure section.
+When creating your application in Runtime Manager, click an application and click **Manage Application** > **Properties** to set the environment variables described in the Properties to Configure section.
 
 ## Deploy in CloudHub
-In Studio, right click your project name in Package Explorer and select **Anypoint Platform > Deploy on CloudHub**.
+In Studio, right click your project name in Package Explorer and select **Anypoint Platform** > **Deploy on CloudHub**.
 
 ## Properties to Configure
 To use this template, configure properties in a properties file or in Runtime Manager as environment variables.
